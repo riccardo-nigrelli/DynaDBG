@@ -16,7 +16,7 @@ $(PROJECT): src/main.o $(INCL)/kmc_api/kmc_file.o $(INCL)/kmc_api/kmer_api.o $(I
 
 %.o: %.cpp
 	@echo "🚧 Compiling $<"
-	$(CXX) $(CXXFLAGS) -I$(INCL) -o $@ -c $<
+	$(CXX) $(CXXFLAGS) -I./include -I$(INCL) -o $@ -c $<
 
 clean:
 	@echo "🧹 Cleaning..."
