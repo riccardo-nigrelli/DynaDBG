@@ -1,4 +1,5 @@
 #include <iostream>
+#include "encoder.hpp"
 #include "kmc_api/kmc_file.h"
 
 const size_t KMER_LENGTH {31};
@@ -17,11 +18,11 @@ int main(int argc, char** argv) {
   kmer_database.Info(kmer_len, mode, cnt_size, prefix_len, signature_len, min_cnt, max_cnt, total_kmer);
   CKmerAPI kmer_obj(kmer_len);
 
-  std::vector<std::string> data;
+  std::vector<uint64> data;
   char kmer[KMER_LENGTH + 1];
   while (kmer_database.ReadNextKmer(kmer_obj, counter)) {
     kmer_obj.to_string(kmer);
-    data.push_back(kmer);
+    data.push_back(enc::encode_string<uint64>(kmer));
   }
 
   std::cout << data.size() << std::endl;
