@@ -20,11 +20,11 @@ int main(int argc, char** argv) {
   kmer_database.Info(kmer_len, mode, cnt_size, prefix_len, signature_len, min_cnt, max_cnt, total_kmer);
   CKmerAPI kmer_obj(kmer_len);
 
-  std::vector<uint64> data;
+  std::vector<uint64_t> data;
   char kmer[KMER_LENGTH + 1];
   while (kmer_database.ReadNextKmer(kmer_obj, counter)) {
     kmer_obj.to_string(kmer);
-    data.push_back(enc::encode_string<uint64>(kmer));
+    data.push_back(enc::encode_string<uint64_t>(kmer));
   }
 
   const int epsilon = 128;
