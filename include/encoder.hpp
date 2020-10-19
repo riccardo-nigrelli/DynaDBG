@@ -4,6 +4,7 @@
   #include <map>
   #include <limits>
   #include <iostream>
+  #include <algorithm>
 
   const std::map<char, unsigned short> encoding {
     {'A', 0b00},
@@ -20,7 +21,7 @@
 
       for (auto _char : kmer) {
         if (encoding.find(_char) == encoding.end()) {
-          std::cerr << "Error: '" << _char << "' is an invalid character" << std::endl;
+          std::cerr << "ERROR: '" << _char << "' is an invalid character" << std::endl;
           exit(EXIT_FAILURE);
         }
         else {
@@ -30,7 +31,7 @@
       }
 
       return result;
-    }
+    }    
   }
 
 #endif
