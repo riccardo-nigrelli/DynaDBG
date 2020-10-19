@@ -1,6 +1,8 @@
 #include <iostream>
 #include "encoder.hpp"
+#include "pgm/pgm_index.hpp"
 #include "kmc_api/kmc_file.h"
+#include "pgm/pgm_index_dynamic.hpp"
 
 const size_t KMER_LENGTH {31};
 
@@ -25,8 +27,23 @@ int main(int argc, char** argv) {
     data.push_back(enc::encode_string<uint64>(kmer));
   }
 
-  std::cout << data.size() << std::endl;
-  std::cout << data.at(0) << std::endl;
+  const int epsilon = 128;
+  const pgm::PGMIndex<uint64_t, epsilon> index(data);
+  std::cout << "PGM-Index dimension: " << index.size_in_bytes() << "[byte]" << std::endl;
+
+  std::string input {};
+  std::cout << "Enter the kmer you want to search for: ";
+  std::cin >> input;
+
+  uint64_t query = enc::encode_string<uint64_t>(input);
+  pgm::ApproxPos range = index.search(query);
+  std::cout << "Range: [" << range.lo << ", " << range.hi << ")" << std::endl;
+  std::cout << "Approximate position: ~" << range.pos << std::endl;
+
+  auto result = std::lower_bound(data.begin() + range.lo, data.begin() + range.hi, query);
+
+  if (*result == query) std::cout << "K-mer found" << std::endl;
+  else std::cerr << "K-mer not found" << std::endl;
 
   return 0;
 }
