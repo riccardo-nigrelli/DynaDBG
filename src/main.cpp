@@ -27,6 +27,8 @@ int main(int argc, char** argv) {
     data.push_back(enc::encode_string<uint64_t>(kmer));
   }
 
+  std::sort(data.begin(), data.end());
+
   const int epsilon = 128;
   const pgm::PGMIndex<uint64_t, epsilon> index(data);
   std::cout << "PGM-Index dimension: " << index.size_in_bytes() << "[byte]" << std::endl;
