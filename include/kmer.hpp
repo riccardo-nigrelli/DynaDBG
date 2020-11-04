@@ -1,5 +1,3 @@
-#pragma once
-
 #ifndef _KMER_T_HPP_
   #define _KMER_T_HPP_
 
@@ -8,7 +6,7 @@
   template <typename T>
   class kmer_t {
 
-    const uint8_t encoder[128] = {
+    static constexpr T encoder[128] = {
       4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
       4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
       4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
@@ -44,7 +42,7 @@
 
       void roll_right(const unsigned char _char) {
         if (encoder[_char] == 4) exit(EXIT_FAILURE);
-        value = encoder[_char] | (value >> 2);
+        value = (value >> 2) | (encoder[_char] << (8 * sizeof(T) - 4));
       }
   };
 
