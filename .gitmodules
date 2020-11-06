@@ -1,3 +1,6 @@
 [submodule "include/KMC"]
 	path = include/KMC
 	url = https://github.com/refresh-bio/KMC.git
+[submodule "include/googletest"]
+	path = include/googletest
+	url = https://github.com/google/googletest.git
