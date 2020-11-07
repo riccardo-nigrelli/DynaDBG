@@ -44,6 +44,10 @@
         if (encoder[_char] == 4) exit(EXIT_FAILURE);
         value = (value >> 2) | (encoder[_char] << (8 * sizeof(T) - 4));
       }
+
+      std::string to_string() {
+        
+      }
   };
 
 #endif
