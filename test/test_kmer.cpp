@@ -1,12 +1,11 @@
 #include <bitset>
-#include <gtest/gtest.h>
 
 #include "kmer.hpp"
+#include "gtest/gtest.h"
 
 typedef kmer_t<uint64_t> short_kmer;
-// typedef kmer_t<mpz_class, 124> long_kmer;
 
-TEST(ShortKmerTest, KmerEquality) {
+TEST(ShortKmer, ShortKmer_Equality_Test) {
   short_kmer kmer("CTAAAAGTGAAGTCAAATTTGTGAGTAACAA");
   short_kmer kmer1("CTAAAAGTGAAGTCAAATTTGTGAGTAACAA");
   ASSERT_TRUE(kmer == kmer1);
@@ -15,7 +14,7 @@ TEST(ShortKmerTest, KmerEquality) {
   ASSERT_FALSE(kmer == kmer1);
 }
 
-TEST(ShortKmerTest, KmerShiftLeft) {
+TEST(ShortKmer, ShortKmer_ShiftLeft_Test) {
   short_kmer kmer("CTAAAAGTGAAGTCAAATTTGTGAGTAACAA");
   ASSERT_TRUE(kmer.to_string() == "CTAAAAGTGAAGTCAAATTTGTGAGTAACAA");
 
@@ -25,7 +24,7 @@ TEST(ShortKmerTest, KmerShiftLeft) {
   ASSERT_TRUE(kmer.roll_left('G').to_string() == "AAGTGAAGTCAAATTTGTGAGTAACAAACGG");
 }
 
-TEST(ShortKmerTest, KmerShiftRight) {
+TEST(ShortKmer, ShortKmer_ShiftRight_Test) {
   short_kmer kmer("AAGTGAAGTCAAATTTGTGAGTAACAAACGG");
   ASSERT_TRUE(kmer.to_string() == "AAGTGAAGTCAAATTTGTGAGTAACAAACGG");
 
@@ -33,16 +32,4 @@ TEST(ShortKmerTest, KmerShiftRight) {
   ASSERT_TRUE(kmer.roll_right('T').to_string() == "TAAAGTGAAGTCAAATTTGTGAGTAACAAAC");
   ASSERT_TRUE(kmer.roll_right('C').to_string() == "CTAAAGTGAAGTCAAATTTGTGAGTAACAAA");
   ASSERT_TRUE(kmer.roll_right('A').to_string() == "ACTAAAGTGAAGTCAAATTTGTGAGTAACAA");
-}
-
-TEST(LongKmerTest, KmerEquality) {
-  // long_kmer kmer("CTAAAAGTGAAGTCAAATTTGTGAGTAACAACTAAAAGTGAAGTCAAATTTGTGAGTAACA");
-  // std::cout << kmer.value << std::endl;
-  // std::cout << kmer.to_string() << std::endl;
-  
-  /*long_kmer kmer1("CTAAAAGTGAAGTCAAATT.TGTGAGTAACAACTAAAAGTGAAGTCAAATTTGTGAGTAACA");
-  ASSERT_TRUE(kmer == kmer1);
-
-  kmer1 = long_kmer("TCTCCAGTGAAGTCAAATTTGTGAGTAACAACTAAAAGTGAAGTTAAGTTTATGAGTAACA");
-  ASSERT_FALSE(kmer == kmer1);*/
 }
