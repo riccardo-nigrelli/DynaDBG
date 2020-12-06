@@ -1,8 +1,8 @@
 #ifndef _KMER_T_HPP_
   #define _KMER_T_HPP_
 
-  #include <iostream>
   #include <bitset>
+  #include <iostream>
 
   template <typename T, const uint8_t size = 8 * sizeof(T)>
   class kmer_t {
@@ -23,18 +23,31 @@
       4, 4, 4, 4, 4, 4, 4, 4
     };
 
+    static size_t& get_counter() {
+      static size_t counter = 0;
+      return counter;
+    }
+  
     public:
-
-      T value {0};
-
+      using type_t = T;
+      size_t index {0};
+      T value = 0;
+      
       explicit kmer_t(const std::string &str) {
         for (unsigned char _char : str) {
           value = (value << 2) | encoder[_char];
         }
+        
+        index = ++get_counter();
+      }
+
+      explicit kmer_t(const T _value) : value(_value) {
+        index = ++get_counter();
       }
 
       inline bool operator==(const kmer_t &kmer) const { return value == kmer.value; }
-
+      inline bool operator<(const kmer_t &kmer) const { return value < kmer.value; }
+      
       kmer_t& roll_left(const unsigned char _char) {
         value = (value << 2) | encoder[_char];
         return *this;
@@ -60,6 +73,8 @@
 
         return kmer;
       }
+
+      static void decrement_count() { get_counter()--; }
   };
 
 #endif
