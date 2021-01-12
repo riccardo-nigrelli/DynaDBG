@@ -1,18 +1,35 @@
+#include "kmer.hpp"
+#include "dyna_dbg.hpp"
 #include <benchmark/benchmark.h>
 
-static void BM_StringCreation(benchmark::State& state) {
-  for (auto _ : state)
-    std::string empty_string;
-}
-// Register the function as a benchmark
-BENCHMARK(BM_StringCreation);
+typedef kmer_t<uint64_t> short_kmer;
 
-// Define another benchmark
-static void BM_StringCopy(benchmark::State& state) {
-  std::string x = "hello";
+static void DynaDBG_create(benchmark::State& state) {
   for (auto _ : state)
-    std::string copy(x);
+    DynaDBG<short_kmer> dbg = DynaDBG<short_kmer>();
 }
-BENCHMARK(BM_StringCopy);
+BENCHMARK(DynaDBG_create);
+
+static void DynaDBG_fill(benchmark::State& state) {
+  for (auto _ : state)
+    DynaDBG<short_kmer> dbg = DynaDBG<short_kmer>("../data/partition/union.txt", false);
+}
+BENCHMARK(DynaDBG_fill);
+
+static void DynaDBG_add_new(benchmark::State& state) {
+  DynaDBG<short_kmer> dbg = DynaDBG<short_kmer>("../data/partition/union.txt", false);
+  for (auto _ : state) {
+    dbg.bulk_add("../data/partition/missing.txt", false);
+  }
+}
+BENCHMARK(DynaDBG_add_new);
+
+static void DynaDBG_add_existing(benchmark::State& state) {
+  DynaDBG<short_kmer> dbg = DynaDBG<short_kmer>("../data/partition/union.txt", false);
+  for (auto _ : state) {
+    dbg.bulk_add("../data/partition/already_present.txt", false);
+  }
+}
+BENCHMARK(DynaDBG_add_existing);
 
 BENCHMARK_MAIN();
