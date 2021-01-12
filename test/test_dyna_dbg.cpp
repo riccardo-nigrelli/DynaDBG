@@ -3,7 +3,7 @@
 #include "gtest/gtest.h"
 
 typedef kmer_t<uint64_t> short_kmer;
-DynaDBG<short_kmer> dbg("../data/sars-cov-2.res");
+DynaDBG<short_kmer> dbg("../data/sars-cov-2/sars-cov-2.res");
 
 TEST(DynaDBG, DynaDBG_Find_Test) {
   ASSERT_TRUE(dbg.member(short_kmer("CTACAGCAACTGGTAATACAGCAAAGCATAA")));
