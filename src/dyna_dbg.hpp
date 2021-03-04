@@ -69,7 +69,7 @@
       }
 
       DynaDBG(const std::string path, benchmark::State& state) {
-        std::vector<std::pair<value_type, size_t>> data = read_file(path, state);
+        std::vector<std::pair<value_type, size_t>> data = read_kmc_file(path);
         dynamic_index = pgm::DynamicPGMIndex<value_type, size_t, PGMType>(data.begin(), data.end());
       }
 
