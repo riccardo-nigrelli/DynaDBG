@@ -16,7 +16,7 @@ include_directories(include)
 include_directories(include/KMC)
 
 add_subdirectory(app)
-add_subdirectory(test)
+# add_subdirectory(test)
 add_subdirectory(include/googletest/googletest)
 
 set(BENCHMARK_ENABLE_TESTING OFF)

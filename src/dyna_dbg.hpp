@@ -10,63 +10,66 @@
   #include "pgm/pgm_index.hpp"
   #include "kmc_api/kmc_file.h"
   #include "pgm/pgm_index_dynamic.hpp"
+  #include "benchmark/include/benchmark/benchmark.h"
 
   template<class kmer_t>
   class DynaDBG {
     
     typedef typename kmer_t::type_t value_type;
     using PGMType = pgm::PGMIndex<value_type>;
-    
-    std::vector<std::pair<value_type, size_t>> data;
+
     pgm::DynamicPGMIndex<value_type, size_t, PGMType> dynamic_index;
     
     static constexpr unsigned char bases[4] = { 'A', 'C', 'G', 'T' };
 
-    void read_file(const std::string path, const bool type = true, const bool operation = true) {
+    std::vector<std::pair<value_type, size_t>> read_kmc_file(const std::string path) {
+
+      std::string kmer;
+      CKMCFile database;
+      std::vector<std::pair<value_type, size_t>> data;
+
+      if (!database.OpenForListing(path)) {
+        std::cerr << "Error: unable to open " << path << std::endl;
+      }
+      
+      uint64 total_kmer, max_cnt;
+      uint32 kmer_len, mode, cnt_size, prefix_len, signature_len, min_cnt, counter;
+
+      database.Info(kmer_len, mode, cnt_size, prefix_len, signature_len, min_cnt, max_cnt, total_kmer);
+      CKmerAPI kmer_obj(kmer_len);
+
+      while (database.ReadNextKmer(kmer_obj, counter)) {
+        kmer_obj.to_string(kmer);
+
+        kmer_t tmp(kmer);
+        data.push_back(std::make_pair(tmp.value, tmp.index));
+      }
+
+      return data;
+    }
+
+    std::vector<std::pair<value_type, size_t>> read_file(const std::string path, benchmark::State& state) {
       
       std::string kmer;
+      std::ifstream file(path);
+      std::vector<std::pair<value_type, size_t>> data;
 
-      if (type) {
-        CKMCFile database {};
-      
-        if (!database.OpenForListing(path)) {
-          std::cerr << "Error: unable to open " << path << std::endl;
-        }
-        
-        uint64 total_kmer, max_cnt;
-        uint32 kmer_len, mode, cnt_size, prefix_len, signature_len, min_cnt, counter;
-
-        database.Info(kmer_len, mode, cnt_size, prefix_len, signature_len, min_cnt, max_cnt, total_kmer);
-        CKmerAPI kmer_obj(kmer_len);
-
-        while (database.ReadNextKmer(kmer_obj, counter)) {
-          kmer_obj.to_string(kmer);
-
-          kmer_t tmp(kmer);
-          if (operation) data.push_back(std::make_pair(tmp.value, tmp.index));
-          else add(tmp);
-        }
-      }
-      else {
-        std::ifstream file(path);
-        while (std::getline(file, kmer)) {
-          kmer_t tmp(kmer);
-          if (operation) data.push_back(std::make_pair(tmp.value, tmp.index));
-          else add(tmp);
-        }
+      while (std::getline(file, kmer)) {
+        kmer_t tmp(kmer);
+        data.push_back(std::make_pair(tmp.value, tmp.index));
       }
 
-      std::sort(data.begin(), data.end());
+      return data;
     }
 
     public:
 
-      explicit DynaDBG() {
+      DynaDBG() {
         dynamic_index = pgm::DynamicPGMIndex<value_type, size_t, PGMType>();
       }
 
-      explicit DynaDBG(const std::string path, const bool type = true) {
-        read_file(path, type);
+      DynaDBG(const std::string path, benchmark::State& state) {
+        std::vector<std::pair<value_type, size_t>> data = read_file(path, state);
         dynamic_index = pgm::DynamicPGMIndex<value_type, size_t, PGMType>(data.begin(), data.end());
       }
 
@@ -78,8 +81,14 @@
 
       void add(const kmer_t &kmer) { dynamic_index.insert_or_assign(kmer.value, kmer.index); }
 
-      void bulk_add(const std::string &path, const bool type = true) {
-        read_file(path, type, false);
+      void bulk_add_from_file(const std::string &path) {
+        std::string kmer;
+        std::ifstream file(path);
+
+        while (std::getline(file, kmer)) {
+          kmer_t tmp(kmer);
+          this->add(tmp);
+        }
       }
 
       void remove(const kmer_t &kmer) {
