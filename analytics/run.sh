@@ -8,7 +8,7 @@ function run_benchmark() {
     echo "Analizing $1-$((2**$k)) file..."
     for i in {1..10}; do
       echo "Iteration #$i..."
-      echo "\\time -v -o '$1-$((2**$k)).time' ./benchmark/$2 $((2**$k)) --benchmark_out='$1-$((2**$k)).json'"
+      echo "\\time -v -o '$1-$((2**$k)).time' ./benchmark/$2 $((2**$k)) $3 --benchmark_out='$1-$((2**$k)).json'"
     done
     cd ..
   done
@@ -17,9 +17,9 @@ function run_benchmark() {
 }
 
 mkdir release && cd release
-run_benchmark "union" Benchmark_Genome_Create
-run_benchmark "new-kmer" Benchmark_Genome_New
-run_benchmark "existing-kmer" Benchmark_Genome_Existing
-run_benchmark "mix-kmer" Benchmark_Genome_Mix
+run_benchmark "union" Benchmark_Genome_Create "sort-union-"
+run_benchmark "new-kmer" Benchmark_Genome_New "sort-new-kmer-"
+run_benchmark "existing-kmer" Benchmark_Genome_Existing "sort-existing-kmer-"
+run_benchmark "mix-kmer" Benchmark_Genome_Mix "sort-mix-kmer-"
 
 exit 0
