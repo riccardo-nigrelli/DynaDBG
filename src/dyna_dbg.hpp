@@ -50,16 +50,27 @@
 
     std::vector<std::pair<value_type, size_t>> read_file(const std::string path, benchmark::State& state) {
       
+      #if TIMER && CREATION
+        state.PauseTiming();
+      #endif
+      
       std::string kmer;
       std::ifstream file(path);
+      if (file.fail()) {
+        std::cerr << "Error: unable to open " << path << std::endl;
+        exit(EXIT_FAILURE);
+      }
+
       std::vector<std::pair<value_type, size_t>> data;
 
       while (std::getline(file, kmer)) {
-        state.PauseTiming();
         kmer_t tmp(kmer);
-        state.ResumeTiming();
         data.push_back(std::make_pair(tmp.value, tmp.index));
       }
+
+      #if TIMER && CREATION
+        state.ResumeTiming();
+      #endif
 
       return data;
     }
@@ -71,9 +82,16 @@
       }
 
       DynaDBG(const std::string path, benchmark::State& state) {
-        // std::vector<std::pair<value_type, size_t>> data = read_kmc_file(path);
+        #if !CREATION
+          state.PauseTiming();
+        #endif
+
         std::vector<std::pair<value_type, size_t>> data = read_file(path, state);
         dynamic_index = pgm::DynamicPGMIndex<value_type, size_t, PGMType>(data.begin(), data.end());
+
+        #if !CREATION
+          state.ResumeTiming();
+        #endif
       }
 
       ~DynaDBG() {}
@@ -85,8 +103,30 @@
       void add(const kmer_t &kmer) { dynamic_index.insert_or_assign(kmer.value, kmer.index); }
 
       void bulk_add_from_file(const std::string &path, benchmark::State& state) {
-        std::vector<std::pair<value_type, size_t>> data = read_file(path, state);
-        for (auto element : data) add(element.first);
+        
+        #if TIMER
+          state.PauseTiming();
+        #endif
+
+        std::string kmer;
+        std::ifstream file(path);
+        if (file.fail()) {
+          std::cerr << "Error: unable to open " << path << std::endl;
+          exit(EXIT_FAILURE);
+        }
+
+        std::vector<kmer_t> data;
+
+        while (std::getline(file, kmer)) {
+          kmer_t tmp(kmer);
+          data.push_back(tmp);
+        }
+
+        #if TIMER
+          state.ResumeTiming();
+        #endif
+        
+        for (kmer_t element : data) add(element);
       }
 
       void remove(const kmer_t &kmer) {
