@@ -13,11 +13,11 @@ function run_benchmark() {
       if [ $2 == 0 ]
       then
         echo Considering $union
-        \\time -v -o $1-$i.time ./../../../../build/benchmark/Benchmark_Genome_Create $union --benchmark_out=$1-$i.json
+        \time -v -o $1-$i.time ./../../../../build/benchmark/Benchmark_Genome_Create $union --benchmark_out=$1-$i.json
       else
         add=$3-$pow/sort-$1-$pow.txt
         echo Considering $union and $add
-        \\time -v -o $1-$i.time ./../../../../build/benchmark/Benchmark_Genome_Add $union $add --benchmark_out=$1-$i.json
+        \time -v -o $1-$i.time ./../../../../build/benchmark/Benchmark_Genome_Add $union $add --benchmark_out=$1-$i.json
       fi
     done
     cd ..
