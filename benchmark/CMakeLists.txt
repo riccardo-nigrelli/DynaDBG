@@ -31,5 +31,5 @@ target_link_libraries(Benchmark_Genome_Create benchmark::benchmark)
 target_include_directories(Benchmark_Genome_Add PUBLIC ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(Benchmark_Genome_Add benchmark::benchmark)
 
-target_compile_definitions(Benchmark_Genome_Create PRIVATE TIMER=1 CREATION=1)
-target_compile_definitions(Benchmark_Genome_Add PRIVATE TIMER=1 CREATION=0)
+target_compile_definitions(Benchmark_Genome_Create PRIVATE TIMER=0 CREATION=1)
+target_compile_definitions(Benchmark_Genome_Add PRIVATE TIMER=0 CREATION=0)

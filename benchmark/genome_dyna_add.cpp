@@ -11,16 +11,14 @@ std::string base_path = "/data/kmg-genome/split-5120/experiment-";
 std::stringstream stream;
 
 int main(int argc, char** argv) {
-  auto _benchmark = [](benchmark::State& state, char* param) {
+  auto _benchmark = [](benchmark::State& state, char* _union, char* add) {
     for (auto _ : state) {
-      stream << base_path << param << "/sort-union-" << param << ".txt";
-      dbg = DynaDBG<short_kmer>(stream.str(), state);
-      stream << base_path << param << "/sort-existing-kmer-" << param << ".txt";
-      dbg.bulk_add_from_file(stream.str(), state);
+      dbg = DynaDBG<short_kmer>(_union, state);
+      dbg.bulk_add_from_file(add, state);
     }
   };
 
-  benchmark::RegisterBenchmark("DynaDBG_Create", _benchmark, argv[1])->Unit(benchmark::kMillisecond);
+  benchmark::RegisterBenchmark("DynaDBG_Create", _benchmark, argv[1], argv[2])->Unit(benchmark::kMillisecond);
   benchmark::Initialize(&argc, argv);
   benchmark::RunSpecifiedBenchmarks();
 
