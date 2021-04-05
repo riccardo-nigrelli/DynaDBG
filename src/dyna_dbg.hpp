@@ -63,7 +63,7 @@
 
       std::vector<std::pair<value_type, size_t>> data;
 
-      while (std::getline(file, kmer, '\t')) {
+      while (std::getline(file, kmer)) {
         kmer_t tmp(kmer.substr(0, kmer.find('\t')));
         data.push_back(std::make_pair(tmp.value, tmp.index));
       }
