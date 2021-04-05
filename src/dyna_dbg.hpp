@@ -50,7 +50,7 @@
 
     std::vector<std::pair<value_type, size_t>> read_file(const std::string path, benchmark::State& state) {
       
-      #if TIMER && CREATION
+      #if STOP && CREATION
         state.PauseTiming();
       #endif
       
@@ -63,12 +63,12 @@
 
       std::vector<std::pair<value_type, size_t>> data;
 
-      while (std::getline(file, kmer)) {
-        kmer_t tmp(kmer);
+      while (std::getline(file, kmer, '\t')) {
+        kmer_t tmp(kmer.substr(0, kmer.find('\t')));
         data.push_back(std::make_pair(tmp.value, tmp.index));
       }
 
-      #if TIMER && CREATION
+      #if STOP && CREATION
         state.ResumeTiming();
       #endif
 
@@ -104,7 +104,7 @@
 
       void bulk_add_from_file(const std::string &path, benchmark::State& state) {
         
-        #if TIMER
+        #if STOP
           state.PauseTiming();
         #endif
 
@@ -118,11 +118,11 @@
         std::vector<kmer_t> data;
 
         while (std::getline(file, kmer)) {
-          kmer_t tmp(kmer);
+          kmer_t tmp(kmer.substr(0, kmer.find('\t')));
           data.push_back(tmp);
         }
 
-        #if TIMER
+        #if STOP
           state.ResumeTiming();
         #endif
         
