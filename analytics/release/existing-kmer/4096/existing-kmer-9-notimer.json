@@ -1,0 +1,52 @@
+{
+  "context": {
+    "date": "2021-04-06T19:08:48+02:00",
+    "host_name": "dyna-dbg",
+    "executable": "./../../../../build/benchmark/Benchmark_Genome_Add",
+    "num_cpus": 64,
+    "mhz_per_cpu": 2703,
+    "cpu_scaling_enabled": false,
+    "caches": [
+      {
+        "type": "Data",
+        "level": 1,
+        "size": 32768,
+        "num_sharing": 2
+      },
+      {
+        "type": "Instruction",
+        "level": 1,
+        "size": 65536,
+        "num_sharing": 2
+      },
+      {
+        "type": "Unified",
+        "level": 2,
+        "size": 524288,
+        "num_sharing": 2
+      },
+      {
+        "type": "Unified",
+        "level": 3,
+        "size": 8388608,
+        "num_sharing": 4
+      }
+    ],
+    "load_avg": [1.36,1.51,1.59],
+    "library_build_type": "release"
+  },
+  "benchmarks": [
+    {
+      "name": "DynaDBG_Create",
+      "run_name": "DynaDBG_Create",
+      "run_type": "iteration",
+      "repetitions": 0,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 1,
+      "real_time": 9.2167028919793665e+03,
+      "cpu_time": 9.1515645180000029e+03,
+      "time_unit": "ms"
+    }
+  ]
+}

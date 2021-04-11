@@ -18,7 +18,7 @@ int main(int argc, char** argv) {
     }
   };
 
-  benchmark::RegisterBenchmark("DynaDBG_Create", _benchmark, argv[1], argv[2])->Unit(benchmark::kMillisecond);
+  benchmark::RegisterBenchmark("DynaDBG_Add", _benchmark, argv[1], argv[2])->Unit(benchmark::kMillisecond);
   benchmark::Initialize(&argc, argv);
   benchmark::RunSpecifiedBenchmarks();
 
