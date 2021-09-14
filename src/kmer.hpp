@@ -1,80 +1,74 @@
-#ifndef _KMER_T_HPP_
-  #define _KMER_T_HPP_
+#pragma once
 
-  #include <bitset>
-  #include <iostream>
+#include <iostream>
 
-  template <typename T, const uint8_t size = 8 * sizeof(T)>
-  class kmer_t {
+#include "kmc_api/kmc_file.h"
+#include "kmc_api/kmer_api.h"
 
-    static constexpr uint8_t encoder[128] = {
-      4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-      4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-      4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-      4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-      4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-      4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-      4, 4, 4, 4, 4, 0, 4, 1, 4, 4,
-      4, 2, 4, 4, 4, 4, 4, 4, 4, 4,
-      4, 4, 4, 4, 3, 4, 4, 4, 4, 4,
-      4, 4, 4, 4, 4, 4, 4, 0, 4, 1,
-      4, 4, 4, 2, 4, 4, 4, 4, 4, 4,
-      4, 4, 4, 4, 4, 4, 3, 4, 4, 4,
-      4, 4, 4, 4, 4, 4, 4, 4
-    };
-
-    static size_t& get_counter() {
-      static size_t counter = 0;
-      return counter;
-    }
+namespace kmer {
   
-    public:
-      using type_t = T;
-      size_t index {0};
-      T value = 0;
-      
-      explicit kmer_t(const std::string &str) {
-        for (unsigned char _char : str) {
-          value = (value << 2) | encoder[_char];
-        }
-        
-        index = ++get_counter();
+  #ifndef DEBUG
+    std::string ulong_to_string(const std::vector<uint64_t>&v, uint32_t klen) {
+      std::string kmer;
+      uint32_t words = (klen + 31) / 32;
+
+      for (uint32_t i = 0; i < klen; ++i) {
+        uint32_t index = words - 1 - i / 32;
+        uint32_t pos = i % 32;
+        uint32_t real_pos = pos * 2;
+
+        char symbol = "ACGT"[(v[index] >> real_pos) & 3];
+        kmer.push_back(symbol);
       }
+      return std::string(kmer.begin(), kmer.end());
+    }
+  #endif
 
-      explicit kmer_t(const T _value) : value(_value) {
-        index = ++get_counter();
-      }
+  /**
+   * Get numeric representation of string kmer
+   * @param k kmert to convert 
+   * @return the numeric representation of the kmer
+   */ 
+  uint64_t string_to_ulong(const std::string &k) {
+    std::vector<uint64_t> v;
+    CKmerAPI kmer(k.size());
+    kmer.from_string(k);
 
-      inline bool operator==(const kmer_t &kmer) const { return value == kmer.value; }
-      inline bool operator<(const kmer_t &kmer) const { return value < kmer.value; }
-      
-      kmer_t& roll_left(const unsigned char _char) {
-        value = (value << 2) | encoder[_char];
-        return *this;
-      }
+    kmer.to_long(v);
+    return v[0];
+  }
 
-      kmer_t& roll_right(const unsigned char _char) {
-        value = (value >> 2) | ((T) encoder[_char] << (size - 4));
-        return *this;
-      }
+  /**
+   * Get predecessor of a given kmer
+   * @param k starting kmer
+   * @param c numer of bits that rapresent the char {'A' => 0, 'C' => 1, 'G' => 2, 'T' => 3}
+   * @return numeric rapresentation of the precessor
+   */ 
+  uint64_t roll_left(const std::string &k, uchar c) {
+    CKmerAPI kmer(k.size());
+    kmer.from_string(k);
+    kmer.SHL_insert2bits(c);
 
-      std::string to_string() {
-        std::string kmer;
-        std::string bits = std::bitset<size - 2>(value).to_string();
+    std::vector<uint64_t> v;
+    kmer.to_long(v);
 
-        for (size_t i = 0; i < bits.length(); i += 2) {
-          uint8_t by_val = (uint8_t)(std::bitset<2>(bits.substr(i, 2)).to_ulong());
-          auto index = std::find(std::begin(encoder), std::end(encoder), by_val);
-          
-          if (index != std::end(encoder)) {
-            kmer.push_back((char)std::distance(encoder, index));
-          }
-        }
+    return v[0];
+  }
+  
+  /**
+   * Get successor of a given kmer
+   * @param k starting kmer
+   * @param c numer of bits that rapresent the char {'A' => 0, 'C' => 1, 'G' => 2, 'T' => 3}
+   * @return numeric rapresentation of the successor
+   */ 
+  uint64_t roll_right(const std::string &k, uchar c) {
+    CKmerAPI kmer(k.size());
+    kmer.from_string(k);
+    kmer.SHR_insert2bits(c);
 
-        return kmer;
-      }
+    std::vector<uint64_t> v;
+    kmer.to_long(v);
 
-      static void decrement_count() { get_counter()--; }
-  };
-
-#endif
+    return v[0];
+  }
+}
