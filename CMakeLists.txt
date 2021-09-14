@@ -1,26 +1,25 @@
 cmake_minimum_required(VERSION 3.18)
 
-project(DynaDBG)
+project(
+  DynaDBG
+  VERSION 1.0
+)
+
+option(BUILD_DynaDBG_BENCHMARK "Build benchmark" ON)
+
 enable_language(CXX)
-set(PROJECT_VERSION_MAJOR 1)
-set(PROJECT_VERSION_MINOR 1)
+set(CMAKE_CXX_STANDARD 17)
 
-set(CMAKE_CXX_FLAGS  "-pedantic -Wall -Wextra -fopenmp")
+set(CMAKE_CXX_FLAGS  "-Wall -Wextra -pedantic -fopenmp")
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_VERBOSE_MAKEFILE ON)
-include(CMakeToolsHelpers OPTIONAL)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include_directories(include)
 include_directories(include/KMC)
 
-add_subdirectory(app)
-# add_subdirectory(test)
-add_subdirectory(include/googletest/googletest)
+add_library(dynadbglib INTERFACE)
+target_include_directories(dynadbglib INTERFACE src/)
 
-set(BENCHMARK_ENABLE_TESTING OFF)
-set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
-
-add_subdirectory(include/benchmark)
-add_subdirectory(benchmark)
+enable_testing()
+add_subdirectory(test)
