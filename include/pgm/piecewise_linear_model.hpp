@@ -15,18 +15,22 @@
 
 #pragma once
 
-#include <cmath>
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
 #include <limits>
-#include <vector>
 #include <stdexcept>
 #include <type_traits>
+#include <utility>
+#include <vector>
 
 #ifdef _OPENMP
 #include <omp.h>
 #else
 #pragma message ("Compilation with -fopenmp is optional but recommended")
-typedef int omp_int_t;
-inline omp_int_t omp_get_max_threads() { return 1; }
+#define omp_get_num_procs() 1
+#define omp_get_max_threads() 1
 #endif
 
 namespace pgm::internal {
@@ -53,39 +57,16 @@ private:
         explicit operator long double() const { return dy / (long double) dx; }
     };
 
-    struct StoredPoint {
-        X x;
-        Y y;
-    };
-
     struct Point {
         X x{};
-        SY y{};
+        Y y{};
 
-        Slope operator-(const Point &p) const { return {SX(x) - p.x, y - p.y}; }
-    };
-
-    template<bool Upper>
-    struct Hull : private std::vector<StoredPoint> {
-        const SY epsilon;
-
-        explicit Hull(SY epsilon) : std::vector<StoredPoint>(), epsilon(Upper ? epsilon : -epsilon) {}
-
-        Point operator[](size_t i) const {
-            auto &p = std::vector<StoredPoint>::operator[](i);
-            return {p.x, SY(p.y) + epsilon};
-        }
-
-        void clear() { std::vector<StoredPoint>::clear(); }
-        void resize(size_t n) { std::vector<StoredPoint>::resize(n); }
-        void reserve(size_t n) { std::vector<StoredPoint>::reserve(n); }
-        size_t size() const { return std::vector<StoredPoint>::size(); }
-        void push(X x, Y y) { std::vector<StoredPoint>::emplace_back(StoredPoint{x, y}); };
+        Slope operator-(const Point &p) const { return {SX(x) - p.x, SY(y) - p.y}; }
     };
 
     const Y epsilon;
-    Hull<false> lower;
-    Hull<true> upper;
+    std::vector<Point> lower;
+    std::vector<Point> upper;
     X first_x = 0;
     X last_x = 0;
     size_t lower_start = 0;
@@ -96,14 +77,14 @@ private:
     auto cross(const Point &O, const Point &A, const Point &B) const {
         auto OA = A - O;
         auto OB = B - O;
-        return (OA.dx * OB.dy) - (OA.dy * OB.dx);
+        return OA.dx * OB.dy - OA.dy * OB.dx;
     }
 
 public:
 
     class CanonicalSegment;
 
-    explicit OptimalPiecewiseLinearModel(Y epsilon) : epsilon(epsilon), lower(epsilon), upper(epsilon) {
+    explicit OptimalPiecewiseLinearModel(Y epsilon) : epsilon(epsilon), lower(), upper() {
         if (epsilon < 0)
             throw std::invalid_argument("epsilon cannot be negative");
 
@@ -116,8 +97,10 @@ public:
             throw std::logic_error("Points must be increasing by x.");
 
         last_x = x;
-        Point p1{x, SY(y) + epsilon};
-        Point p2{x, SY(y) - epsilon};
+        auto max_y = std::numeric_limits<Y>::max();
+        auto min_y = std::numeric_limits<Y>::lowest();
+        Point p1{x, y >= max_y - epsilon ? max_y : y + epsilon};
+        Point p2{x, y <= min_y + epsilon ? min_y : y - epsilon};
 
         if (points_in_hull == 0) {
             first_x = x;
@@ -125,8 +108,8 @@ public:
             rectangle[1] = p2;
             upper.clear();
             lower.clear();
-            upper.push(x, y);
-            lower.push(x, y);
+            upper.push_back(p1);
+            lower.push_back(p2);
             upper_start = lower_start = 0;
             ++points_in_hull;
             return true;
@@ -135,8 +118,8 @@ public:
         if (points_in_hull == 1) {
             rectangle[2] = p2;
             rectangle[3] = p1;
-            upper.push(x, y);
-            lower.push(x, y);
+            upper.push_back(p1);
+            lower.push_back(p2);
             ++points_in_hull;
             return true;
         }
@@ -156,7 +139,7 @@ public:
             auto min = lower[lower_start] - p1;
             auto min_i = lower_start;
             for (auto i = lower_start + 1; i < lower.size(); i++) {
-                auto val = (lower[i] - p1);
+                auto val = lower[i] - p1;
                 if (val > min)
                     break;
                 min = val;
@@ -172,7 +155,7 @@ public:
             for (; end >= upper_start + 2 && cross(upper[end - 2], upper[end - 1], p1) <= 0; --end)
                 continue;
             upper.resize(end);
-            upper.push(x, y);
+            upper.push_back(p1);
         }
 
         if (p2 - rectangle[0] > slope1) {
@@ -180,7 +163,7 @@ public:
             auto max = upper[upper_start] - p2;
             auto max_i = upper_start;
             for (auto i = upper_start + 1; i < upper.size(); i++) {
-                auto val = (upper[i] - p2);
+                auto val = upper[i] - p2;
                 if (val < max)
                     break;
                 max = val;
@@ -196,7 +179,7 @@ public:
             for (; end >= lower_start + 2 && cross(lower[end - 2], lower[end - 1], p2) >= 0; --end)
                 continue;
             lower.resize(end);
-            lower.push(x, y);
+            lower.push_back(p2);
         }
 
         ++points_in_hull;
@@ -258,9 +241,18 @@ public:
         return {i_x, i_y};
     }
 
-    std::pair<long double, long double> get_floating_point_segment(const X &origin) const {
+    std::pair<long double, SY> get_floating_point_segment(const X &origin) const {
         if (one_point())
             return {0, (rectangle[0].y + rectangle[1].y) / 2};
+
+        if constexpr (std::is_integral_v<X> && std::is_integral_v<Y>) {
+            auto slope = rectangle[3] - rectangle[1];
+            auto intercept_n = slope.dy * (SX(origin) - rectangle[1].x);
+            auto intercept_d = slope.dx;
+            auto rounding_term = ((intercept_n < 0) ^ (intercept_d < 0) ? -1 : +1) * intercept_d / 2;
+            auto intercept = (intercept_n + rounding_term) / intercept_d + rectangle[1].y;
+            return {static_cast<long double>(slope), intercept};
+        }
 
         auto[i_x, i_y] = get_intersection();
         auto[min_slope, max_slope] = get_slope_range();
@@ -287,7 +279,6 @@ size_t make_segmentation(size_t n, size_t epsilon, Fin in, Fout out) {
     using X = typename std::invoke_result_t<Fin, size_t>::first_type;
     using Y = typename std::invoke_result_t<Fin, size_t>::second_type;
     size_t c = 0;
-    size_t start = 0;
     auto p = in(0);
 
     OptimalPiecewiseLinearModel<X, Y> opt(epsilon);
@@ -295,13 +286,12 @@ size_t make_segmentation(size_t n, size_t epsilon, Fin in, Fout out) {
 
     for (size_t i = 1; i < n; ++i) {
         auto next_p = in(i);
-        if (i != start && next_p.first == p.first)
+        if (next_p.first == p.first)
             continue;
         p = next_p;
         if (!opt.add_point(p.first, p.second)) {
             out(opt.get_segment());
-            start = i;
-            --i;
+            opt.add_point(p.first, p.second);
             ++c;
         }
     }
@@ -312,7 +302,7 @@ size_t make_segmentation(size_t n, size_t epsilon, Fin in, Fout out) {
 
 template<typename Fin, typename Fout>
 size_t make_segmentation_par(size_t n, size_t epsilon, Fin in, Fout out) {
-    auto parallelism = std::min<size_t>(omp_get_max_threads(), 20);
+    auto parallelism = std::min(std::min(omp_get_num_procs(), omp_get_max_threads()), 20);
     auto chunk_size = n / parallelism;
     auto c = 0ull;
 
@@ -325,7 +315,7 @@ size_t make_segmentation_par(size_t n, size_t epsilon, Fin in, Fout out) {
     std::vector<std::vector<canonical_segment>> results(parallelism);
 
     #pragma omp parallel for reduction(+:c) num_threads(parallelism)
-    for (auto i = 0ull; i < parallelism; ++i) {
+    for (auto i = 0; i < parallelism; ++i) {
         auto first = i * chunk_size;
         auto last = i == parallelism - 1 ? n : first + chunk_size;
         if (first > 0) {

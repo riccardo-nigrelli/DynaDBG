@@ -15,11 +15,15 @@
 
 #pragma once
 
-#include <limits>
-#include <vector>
-#include <utility>
-#include <algorithm>
 #include "piecewise_linear_model.hpp"
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
+#include <limits>
+#include <stdexcept>
+#include <utility>
+#include <vector>
 
 namespace pgm {
 
@@ -57,11 +61,14 @@ struct ApproxPos {
  * @tparam EpsilonRecursive controls the size of the search range in the internal structure
  * @tparam Floating the floating-point type to use for slopes
  */
-template<typename K, size_t Epsilon = 64, size_t EpsilonRecursive = 4, typename Floating = double>
+template<typename K, size_t Epsilon = 64, size_t EpsilonRecursive = 4, typename Floating = float>
 class PGMIndex {
 protected:
-    template<typename, size_t, uint8_t, typename>
-    friend class InMemoryPGMIndex;
+    template<typename, size_t, size_t, uint8_t, typename>
+    friend class BucketingPGMIndex;
+
+    template<typename, size_t, typename>
+    friend class EliasFanoPGMIndex;
 
     static_assert(Epsilon > 0);
     struct Segment;
@@ -69,54 +76,54 @@ protected:
     size_t n;                           ///< The number of elements this index was built on.
     K first_key;                        ///< The smallest element.
     std::vector<Segment> segments;      ///< The segments composing the index.
-    std::vector<size_t> levels_sizes;   ///< The number of segment in each level, in reverse order.
     std::vector<size_t> levels_offsets; ///< The starting position of each level in segments[], in reverse order.
 
     template<typename RandomIt>
-    void build(RandomIt first, RandomIt last, size_t epsilon, size_t epsilon_recursive) {
+    static void build(RandomIt first, RandomIt last,
+                      size_t epsilon, size_t epsilon_recursive,
+                      std::vector<Segment> &segments,
+                      std::vector<size_t> &levels_offsets) {
+        auto n = (size_t) std::distance(first, last);
         if (n == 0)
             return;
 
-        first_key = *first;
         levels_offsets.push_back(0);
         segments.reserve(n / (epsilon * epsilon));
 
-        auto ignore_last = *std::prev(last) == std::numeric_limits<K>::max(); // max is reserved for padding
+        auto ignore_last = *std::prev(last) == std::numeric_limits<K>::max(); // max() is the sentinel value
         auto last_n = n - ignore_last;
         last -= ignore_last;
 
-        auto back_check = [this, last](size_t n_segments, size_t prev_level_size) {
-            if (segments.back().slope == 0) {
-                // Here, we need to ensure that keys > *(last-1) are approximated to a position == prev_level_size
-                segments.emplace_back(*std::prev(last) + 1, 0, prev_level_size);
+        auto build_level = [&](auto epsilon, auto in_fun, auto out_fun) {
+            auto n_segments = internal::make_segmentation_par(last_n, epsilon, in_fun, out_fun);
+            if (segments.back().slope == 0 && last_n > 1) {
+                // Here we need to ensure that keys > *(last-1) are approximated to a position == prev_level_size
+                segments.emplace_back(*std::prev(last) + 1, 0, last_n);
                 ++n_segments;
             }
-            segments.emplace_back(prev_level_size);
+            segments.emplace_back(last_n); // Add the sentinel segment
             return n_segments;
         };
 
         // Build first level
-        auto in_fun = [this, first](auto i) {
+        auto in_fun = [&](auto i) {
             auto x = first[i];
-            if (i > 0 && i + 1u < n && x == first[i - 1] && x != first[i + 1] && x + 1 != first[i + 1])
-                return std::pair<K, size_t>(x + 1, i);
-            return std::pair<K, size_t>(x, i);
+            // Here there is an adjustment for inputs with duplicate keys: at the end of a run of duplicate keys equal
+            // to x=first[i] such that x+1!=first[i+1], we map the values x+1,...,first[i+1]-1 to their correct rank i
+            auto flag = i > 0 && i + 1u < n && x == first[i - 1] && x != first[i + 1] && x + 1 != first[i + 1];
+            return std::pair<K, size_t>(x + flag, i);
         };
-        auto out_fun = [this](auto cs) { segments.emplace_back(cs); };
-        last_n = back_check(internal::make_segmentation_par(last_n, epsilon, in_fun, out_fun), last_n);
+        auto out_fun = [&](auto cs) { segments.emplace_back(cs); };
+        last_n = build_level(epsilon, in_fun, out_fun);
         levels_offsets.push_back(levels_offsets.back() + last_n + 1);
-        levels_sizes.push_back(last_n);
 
         // Build upper levels
         while (epsilon_recursive && last_n > 1) {
             auto offset = levels_offsets[levels_offsets.size() - 2];
-            auto in_fun_rec = [this, offset](auto i) { return std::pair<K, size_t>(segments[offset + i].key, i); };
-            last_n = back_check(internal::make_segmentation(last_n, epsilon_recursive, in_fun_rec, out_fun), last_n);
+            auto in_fun_rec = [&](auto i) { return std::pair<K, size_t>(segments[offset + i].key, i); };
+            last_n = build_level(epsilon_recursive, in_fun_rec, out_fun);
             levels_offsets.push_back(levels_offsets.back() + last_n + 1);
-            levels_sizes.push_back(last_n);
         }
-
-        levels_offsets.pop_back();
     }
 
     /**
@@ -126,12 +133,10 @@ protected:
      */
     auto segment_for_key(const K &key) const {
         if constexpr (EpsilonRecursive == 0) {
-            auto it = std::upper_bound(segments.begin(), segments.begin() + levels_sizes[0], key);
-            return it == segments.begin() ? it : std::prev(it);
+            return std::prev(std::upper_bound(segments.begin(), segments.begin() + segments_count(), key));
         }
 
-        auto it = segments.begin() + levels_offsets.back();
-
+        auto it = segments.begin() + *(levels_offsets.end() - 2);
         for (auto l = int(height()) - 2; l >= 0; --l) {
             auto level_begin = segments.begin() + levels_offsets[l];
             auto pos = std::min<size_t>((*it)(key), std::next(it)->intercept);
@@ -143,10 +148,9 @@ protected:
                     continue;
                 it = lo;
             } else {
-                auto level_size = levels_sizes[l];
+                auto level_size = levels_offsets[l + 1] - levels_offsets[l] - 1;
                 auto hi = level_begin + PGM_ADD_EPS(pos, EpsilonRecursive, level_size);
-                it = std::upper_bound(lo, hi, key);
-                it = it == level_begin ? it : std::prev(it);
+                it = std::prev(std::upper_bound(lo, hi, key));
             }
         }
         return it;
@@ -174,11 +178,10 @@ public:
     template<typename RandomIt>
     PGMIndex(RandomIt first, RandomIt last)
         : n(std::distance(first, last)),
-          first_key(),
+          first_key(n ? *first : K(0)),
           segments(),
-          levels_sizes(),
           levels_offsets() {
-        build(first, last, Epsilon, EpsilonRecursive);
+        build(first, last, Epsilon, EpsilonRecursive, segments, levels_offsets);
     }
 
     /**
@@ -199,25 +202,19 @@ public:
      * Returns the number of segments in the last level of the index.
      * @return the number of segments
      */
-    size_t segments_count() const {
-        return segments.empty() ? 0 : levels_sizes.front();
-    }
+    size_t segments_count() const { return segments.empty() ? 0 : levels_offsets[1] - 1; }
 
     /**
      * Returns the number of levels of the index.
      * @return the number of levels of the index
      */
-    size_t height() const {
-        return levels_sizes.size();
-    }
+    size_t height() const { return levels_offsets.size() - 1; }
 
     /**
      * Returns the size of the index in bytes.
      * @return the size of the index in bytes
      */
-    size_t size_in_bytes() const {
-        return segments.size() * sizeof(Segment);
-    }
+    size_t size_in_bytes() const { return segments.size() * sizeof(Segment) + levels_offsets.size() * sizeof(size_t); }
 };
 
 #pragma pack(push, 1)
@@ -230,7 +227,7 @@ struct PGMIndex<K, Epsilon, EpsilonRecursive, Floating>::Segment {
 
     Segment() = default;
 
-    Segment(K key, Floating slope, Floating intercept) : key(key), slope(slope), intercept(intercept) {};
+    Segment(K key, Floating slope, int32_t intercept) : key(key), slope(slope), intercept(intercept) {};
 
     explicit Segment(size_t n) : key(std::numeric_limits<K>::max()), slope(), intercept(n) {};
 
@@ -240,11 +237,14 @@ struct PGMIndex<K, Epsilon, EpsilonRecursive, Floating>::Segment {
         if (cs_intercept > std::numeric_limits<decltype(intercept)>::max())
             throw std::overflow_error("Change the type of Segment::intercept to int64");
         slope = cs_slope;
-        intercept = std::round(cs_intercept);
+        intercept = cs_intercept;
     }
 
     friend inline bool operator<(const Segment &s, const K &k) { return s.key < k; }
     friend inline bool operator<(const K &k, const Segment &s) { return k < s.key; }
+    friend inline bool operator<(const Segment &s, const Segment &t) { return s.key < t.key; }
+
+    operator K() { return key; };
 
     /**
      * Returns the approximate position of the specified key.
@@ -258,17 +258,5 @@ struct PGMIndex<K, Epsilon, EpsilonRecursive, Floating>::Segment {
 };
 
 #pragma pack(pop)
-
-/**
- * A space-efficient index that enables fast search operations on a sorted sequence of numbers. This variant of
- * @ref PGMIndex uses a binary search in the last level, and it should only be used when the space usage, returned by
- * @ref PGMIndex::size_in_bytes(), is low (for example, less than the last level cache size).
- *
- * @tparam K the type of the indexed keys
- * @tparam Epsilon controls the size of the search range
- * @tparam Floating the floating-point type to use for slopes
- */
-template<typename K, size_t Epsilon, typename Floating = double>
-using BinarySearchBasedPGMIndex = PGMIndex<K, Epsilon, 0, Floating>;
 
 }
