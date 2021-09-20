@@ -16,7 +16,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 include_directories(include)
-include_directories(include/KMC)
+file(GLOB KMC_SRC "include/kmc/kmc_api/*.cpp")
 
 add_library(dynadbglib INTERFACE)
 target_include_directories(dynadbglib INTERFACE src/)

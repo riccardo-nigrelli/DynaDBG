@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "kmc_api/kmer_api.h"
+#include "kmc/kmc_api/kmer_api.h"
 
 namespace kmer {
   

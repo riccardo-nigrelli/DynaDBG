@@ -2,7 +2,6 @@
 
 #include "catch.hpp"
 #include "kmer.hpp"
-#include "kmc_api/kmer_api.h"
 
 TEST_CASE("K-MER: Compute next") {
   std::string current("CTAAAAGTGAAGTCAAATTTGTGAGTAACAA");

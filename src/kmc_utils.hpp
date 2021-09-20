@@ -3,8 +3,8 @@
 #include <string>
 #include <iostream>
 
-#include "kmc_api/kmc_file.h"
-#include "kmc_api/kmer_api.h"
+#include "kmc/kmc_api/kmc_file.h"
+#include "kmc/kmc_api/kmer_api.h"
 
 namespace kmc {
 
