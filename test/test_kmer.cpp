@@ -2,14 +2,44 @@
 
 #include "catch.hpp"
 #include "kmer.hpp"
+#include "kmc_api/kmer_api.h"
 
-TEST_CASE("K-MER: Compute next", "[kmer]") {
-  std::string current("CCCTTGAGACAACTACAGCAACTAGTCATAC");
-  kmer::roll_left(current, 0);
+TEST_CASE("K-MER: Compute next") {
+  std::string current("CTAAAAGTGAAGTCAAATTTGTGAGTAACAA");
+  uint64_t next = kmer::roll_left(current, 0);
+  REQUIRE(kmer::ulong_to_string(next, current.size()) == "TAAAAGTGAAGTCAAATTTGTGAGTAACAAA");
 
-  REQUIRE(1 == 1);
+  current = "TAAAAGTGAAGTCAAATTTGTGAGTAACAAA";
+  next = kmer::roll_left(current, 1);
+  REQUIRE(kmer::ulong_to_string(next, current.size()) == "AAAAGTGAAGTCAAATTTGTGAGTAACAAAC");
+  
+  current = "AAAAGTGAAGTCAAATTTGTGAGTAACAAAC";
+  next = kmer::roll_left(current, 2);
+  REQUIRE(kmer::ulong_to_string(next, current.size()) == "AAAGTGAAGTCAAATTTGTGAGTAACAAACG");
+  
+  current = "AAAGTGAAGTCAAATTTGTGAGTAACAAACG";
+  next = kmer::roll_left(current, 2);
+  REQUIRE(kmer::ulong_to_string(next, current.size()) == "AAGTGAAGTCAAATTTGTGAGTAACAAACGG");
+  
+  current = "AAGTGAAGTCAAATTTGTGAGTAACAAACGG";
+  next = kmer::roll_left(current, 3);
+  REQUIRE(kmer::ulong_to_string(next, current.size()) == "AGTGAAGTCAAATTTGTGAGTAACAAACGGT");
 }
 
-TEST_CASE("K-MER: Compute prev", "[kmer]") {
-  REQUIRE(1 == 1);
+TEST_CASE("K-MER: Compute prev") {
+  std::string current("CTAAAAGTGAAGTCAAATTTGTGAGTAACAA");
+  uint64_t next = kmer::roll_right(current, 0);
+  REQUIRE(kmer::ulong_to_string(next, current.size()) == "ACTAAAAGTGAAGTCAAATTTGTGAGTAACA");
+
+  current = "ACTAAAAGTGAAGTCAAATTTGTGAGTAACA";
+  next = kmer::roll_right(current, 1);
+  REQUIRE(kmer::ulong_to_string(next, current.size()) == "CACTAAAAGTGAAGTCAAATTTGTGAGTAAC");
+  
+  current = "CACTAAAAGTGAAGTCAAATTTGTGAGTAAC";
+  next = kmer::roll_right(current, 3);
+  REQUIRE(kmer::ulong_to_string(next, current.size()) == "TCACTAAAAGTGAAGTCAAATTTGTGAGTAA");
+  
+  current = "TCACTAAAAGTGAAGTCAAATTTGTGAGTAA";
+  next = kmer::roll_right(current, 2);
+  REQUIRE(kmer::ulong_to_string(next, current.size()) == "GTCACTAAAAGTGAAGTCAAATTTGTGAGTA");
 }
