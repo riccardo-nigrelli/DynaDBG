@@ -10,7 +10,7 @@ option(BUILD_DynaDBG_BENCHMARK "Build benchmark" ON)
 enable_language(CXX)
 set(CMAKE_CXX_STANDARD 17)
 
-set(CMAKE_CXX_FLAGS  "-Wall -Wextra -pedantic -fopenmp")
+include(CheckCXXCompilerFlag)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -20,6 +20,12 @@ include_directories(include/KMC)
 
 add_library(dynadbglib INTERFACE)
 target_include_directories(dynadbglib INTERFACE src/)
+
+find_package(OpenMP)
+if (OpenMP_CXX_FOUND)
+  message(STATUS "OpenMP found")
+  target_link_libraries(dynadbglib INTERFACE OpenMP::OpenMP_CXX)
+endif ()
 
 enable_testing()
 add_subdirectory(test)
