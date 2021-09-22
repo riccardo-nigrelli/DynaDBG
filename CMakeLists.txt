@@ -5,15 +5,8 @@ project(
   VERSION 1.0
 )
 
-option(BUILD_DynaDBG_BENCHMARK "Build benchmark" ON)
-
-enable_language(CXX)
 set(CMAKE_CXX_STANDARD 17)
-
 include(CheckCXXCompilerFlag)
-
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_VERBOSE_MAKEFILE ON)
 
 include_directories(include)
 file(GLOB KMC_SRC "include/kmc/kmc_api/*.cpp")

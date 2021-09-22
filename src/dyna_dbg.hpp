@@ -4,7 +4,6 @@
 
 #include "kmer.hpp"
 #include "kmc_utils.hpp"
-#include "pgm_index_dynamic_set.hpp"
 #include "pgm/pgm_index_dynamic.hpp"
 
 namespace DynaDBG {
@@ -13,9 +12,7 @@ namespace DynaDBG {
     pgm::DynamicPGMIndex<uint64_t, uint32_t> dynamic_index;
     
     public:
-      Pair(std::vector<std::pair<uint64_t, uint32_t>> &data): dynamic_index(data.begin(), data.end()) {
-
-      }
+      Pair(std::vector<std::pair<uint64_t, uint32_t>> &data): dynamic_index(data.begin(), data.end()) { }
 
       ~Pair() { }
 
@@ -42,14 +39,4 @@ namespace DynaDBG {
       
       size_t size() const { return dynamic_index.size(); }
   };
-
-  class Set {
-    pgm::DynamicPGMIndexSet<uint64_t> dynamic_index;
-
-    public:
-      Set() {}
-
-      ~Set() {}
-  };
-
 }
