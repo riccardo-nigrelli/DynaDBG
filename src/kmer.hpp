@@ -1,7 +1,5 @@
 #pragma once
 
-#include <iostream>
-
 #include "kmc/kmc_api/kmer_api.h"
 
 namespace kmer {

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string>
-#include <iostream>
 
 #include "kmc/kmc_api/kmc_file.h"
 #include "kmc/kmc_api/kmer_api.h"

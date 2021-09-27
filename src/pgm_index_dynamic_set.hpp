@@ -1,4 +1,4 @@
-// This file is an extension of Dynamic PGM-index <https://github.com/gvinciguerra/PGM-index>.
+// This file is an variation of Dynamic PGM-index <https://github.com/gvinciguerra/PGM-index>.
 // Copyright (c) 2021 Riccardo Nigrelli 
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +16,7 @@
 #pragma once
 
 #include "pgm/pgm_index.hpp"
+#include "pgm/pgm_index_dynamic.hpp"
 #include <cstddef>
 #include <cstdint>
 #include <algorithm>
@@ -34,11 +35,11 @@ namespace pgm {
 
   template<typename K, typename PGMType = PGMIndex<K, 3>>
   class DynamicPGMIndexSet {
-    class ItemB;
+    class Item;
     class Iterator;
 
     // using Item = std::conditional_t<std::is_pointer_v<K> || std::is_arithmetic_v<K>, ItemA, ItemB>;
-    using Item = ItemB;
+    // using Item = ItemB;
     using Level = std::vector<Item>;
 
     const uint8_t base;            ///< base^i is the maximum size of the ith level.
@@ -102,7 +103,7 @@ namespace pgm {
 
         // Rebuild index, if needed
         if (has_pgm(target))
-            pgm(target) = PGMType(level(target).begin(), level(target).end());
+          pgm(target) = PGMType(level(target).begin(), level(target).end());
     }
 
     void insert(const Item &new_item) {
@@ -454,89 +455,6 @@ namespace pgm {
         return first + (*first < x);
       }
   };
-
-  namespace internal {
-
-    /* LoserTree implementation adapted from Timo Bingmann's https://tlx.github.io and http://stxxl.org, and from
-    * Johannes Singler's http://algo2.iti.uni-karlsruhe.de/singler/mcstl. These three libraries are distributed under the
-    * Boost Software License 1.0. */
-    template<typename T>
-    class LoserTree {
-      using Source = uint8_t;
-
-      struct Loser {
-        T key;         ///< Copy of the current key in the sequence.
-        Source source; ///< Index of the sequence.
-      };
-
-      Source k;                  ///< Smallest power of 2 greater than the number of nodes.
-      std::vector<Loser> losers; ///< Vector of size 2k containing loser tree nodes.
-
-      static uint64_t next_pow2(uint64_t x) {
-        return x == 1 ? 1 : uint64_t(1) << (sizeof(unsigned long long) * 8 - __builtin_clzll(x - 1));
-      }
-
-      /** Called recursively to build the initial tree. */
-      Source init_winner(const Source &root) {
-        if (root >= k)
-          return root;
-
-        auto left = init_winner(2 * root);
-        auto right = init_winner(2 * root + 1);
-        if (losers[right].key >= losers[left].key) {
-          losers[root] = losers[right];
-          return left;
-        } else {
-          losers[root] = losers[left];
-          return right;
-        }
-      }
-
-      public:
-
-        LoserTree() = default;
-
-        explicit LoserTree(const Source &ik) : k(next_pow2(ik)), losers(2 * k) {
-          for (auto i = ik - 1u; i < k; ++i) {
-            losers[i + k].key = std::numeric_limits<T>::max();
-            losers[i + k].source = std::numeric_limits<Source>::max();
-          }
-        }
-
-        /** Returns the index of the sequence with the smallest element. */
-        Source min_source() const {
-          assert(losers[0].source != std::numeric_limits<Source>::max());
-          return losers[0].source;
-        }
-
-        /** Inserts the initial element of the sequence source. */
-        void insert_start(const T *key_ptr, const Source &source) {
-          Source pos = k + source;
-          assert(pos < losers.size());
-          losers[pos].source = source;
-          losers[pos].key = *key_ptr;
-        }
-
-        /** Deletes the smallest element and insert a new element in its place. */
-        void delete_min_insert(const T *key_ptr) {
-          auto source = losers[0].source;
-          auto key = key_ptr ? *key_ptr : std::numeric_limits<T>::max();
-
-          for (auto pos = (k + source) / 2; pos > 0; pos /= 2) {
-            if (losers[pos].key < key || (key >= losers[pos].key && losers[pos].source < source)) {
-              std::swap(losers[pos].source, source);
-              std::swap(losers[pos].key, key);
-            }
-          }
-
-          losers[0].source = source;
-          losers[0].key = key;
-        }
-
-        /** Initializes the tree. */
-        void init() { losers[0] = losers[init_winner(1)]; }
-    };
-  } // namespace internal
   
   template<typename K, typename PGMType>
   class DynamicPGMIndexSet<K, PGMType>::Iterator {
@@ -684,14 +602,14 @@ namespace pgm {
   // const K DynamicPGMIndexSet<K, PGMType>::ItemA::tombstone = get_tombstone<K>();
 
   template<typename K, typename PGMType>
-  class DynamicPGMIndexSet<K, PGMType>::ItemB {
+  class DynamicPGMIndexSet<K, PGMType>::Item {
     bool flag;
 
     public:
       K first;
 
-      ItemB() = default;
-      explicit ItemB(const K &elem, const bool flag = false) : flag(flag), first(elem) {}
+      Item() = default;
+      explicit Item(const K &elem, const bool flag = false) : flag(flag), first(elem) {}
 
       operator K() const { return first; }
       bool deleted() const { return flag; }
