@@ -37,7 +37,6 @@
 
 # Binary
 build/
-DynaDBG
 
 #CMake
 CMakeLists.txt.user
