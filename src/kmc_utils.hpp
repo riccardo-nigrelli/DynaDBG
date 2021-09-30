@@ -20,7 +20,7 @@ namespace kmc {
     
     CKmerAPI kmer(kmer_len);
 
-    std::vector<uint64_t> ulong_kmer;
+    std::vector<uint64> ulong_kmer;
     std::vector<std::pair<uint64_t, uint32_t>> data;
 
     while (database.ReadNextKmer(kmer, cnt)) {
@@ -44,7 +44,7 @@ namespace kmc {
     
     CKmerAPI kmer(kmer_len);
 
-    std::vector<uint64_t> ulong_kmer;
+    std::vector<uint64> ulong_kmer;
     std::vector<uint64_t> data;
 
     while (database.ReadNextKmer(kmer, cnt)) {

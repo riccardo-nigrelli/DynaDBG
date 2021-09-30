@@ -22,7 +22,7 @@ namespace kmer {
    * @return the numeric representation of the kmer
    */ 
   uint64_t string_to_ulong(const std::string &k) {
-    std::vector<uint64_t> v;
+    std::vector<uint64> v;
     CKmerAPI kmer(k.size());
     kmer.from_string(k);
 
@@ -41,7 +41,7 @@ namespace kmer {
     kmer.from_string(k);
     kmer.SHL_insert2bits(c);
     
-    std::vector<uint64_t> v;
+    std::vector<uint64> v;
     kmer.to_long(v);
     return v[0];
   }
@@ -57,7 +57,7 @@ namespace kmer {
     kmer.from_string(k);
     kmer.SHR_insert2bits(c);
     
-    std::vector<uint64_t> v;
+    std::vector<uint64> v;
     kmer.to_long(v);
     return v[0];
   }
