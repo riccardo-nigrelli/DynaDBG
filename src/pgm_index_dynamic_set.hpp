@@ -1,4 +1,4 @@
-// This file is an variation of Dynamic PGM-index <https://github.com/gvinciguerra/PGM-index>.
+// This file is a variation of Dynamic PGM-index <https://github.com/gvinciguerra/PGM-index>.
 // Copyright (c) 2021 Riccardo Nigrelli 
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,8 +38,6 @@ namespace pgm {
     class Item;
     class Iterator;
 
-    // using Item = std::conditional_t<std::is_pointer_v<K> || std::is_arithmetic_v<K>, ItemA, ItemB>;
-    // using Item = ItemB;
     using Level = std::vector<Item>;
 
     const uint8_t base;            ///< base^i is the maximum size of the ith level.
@@ -64,46 +62,46 @@ namespace pgm {
                         uint8_t target,
                         size_t size_hint,
                         typename Level::iterator insertion_point) {
-        Level tmp_a(size_hint + level(target).size());
-        Level tmp_b(size_hint + level(target).size());
+      Level tmp_a(size_hint + level(target).size());
+      Level tmp_b(size_hint + level(target).size());
 
-        // Insert new_item in sorted order in the first level
-        auto alternate = true;
-        auto it = std::move(level(min_level).begin(), insertion_point, tmp_a.begin());
-        *it++ = new_item;
-        it = std::move(insertion_point, level(min_level).end(), it);
-        auto tmp_size = std::distance(tmp_a.begin(), it);
+      // Insert new_item in sorted order in the first level
+      auto alternate = true;
+      auto it = std::move(level(min_level).begin(), insertion_point, tmp_a.begin());
+      *it++ = new_item;
+      it = std::move(insertion_point, level(min_level).end(), it);
+      auto tmp_size = std::distance(tmp_a.begin(), it);
 
-        // Merge subsequent levels
-        uint8_t merge_limit = level(target).empty() ? target - 1 : target;
-        for (uint8_t i = 1 + min_level; i <= merge_limit; ++i, alternate = !alternate) {
-          auto tmp_begin = (alternate ? tmp_a : tmp_b).begin();
-          auto tmp_end = tmp_begin + tmp_size;
-          auto out_begin = (alternate ? tmp_b : tmp_a).begin();
-          decltype(out_begin) out_end;
+      // Merge subsequent levels
+      uint8_t merge_limit = level(target).empty() ? target - 1 : target;
+      for (uint8_t i = 1 + min_level; i <= merge_limit; ++i, alternate = !alternate) {
+        auto tmp_begin = (alternate ? tmp_a : tmp_b).begin();
+        auto tmp_end = tmp_begin + tmp_size;
+        auto out_begin = (alternate ? tmp_b : tmp_a).begin();
+        decltype(out_begin) out_end;
 
-          auto can_delete_permanently = i == used_levels - 1;
-          if (can_delete_permanently)
-            out_end = merge<true, true>(tmp_begin, tmp_end, level(i).begin(), level(i).end(), out_begin);
-          else
-            out_end = merge<false, true>(tmp_begin, tmp_end, level(i).begin(), level(i).end(), out_begin);
-          tmp_size = std::distance(out_begin, out_end);
+        auto can_delete_permanently = i == used_levels - 1;
+        if (can_delete_permanently)
+          out_end = merge<true, true>(tmp_begin, tmp_end, level(i).begin(), level(i).end(), out_begin);
+        else
+          out_end = merge<false, true>(tmp_begin, tmp_end, level(i).begin(), level(i).end(), out_begin);
+        tmp_size = std::distance(out_begin, out_end);
 
-          // Empty this level and the corresponding index
-          level(i).clear();
-          if (i >= max_fully_allocated_level())
-            level(i).shrink_to_fit();
-          if (has_pgm(i))
-            pgm(i) = PGMType();
-        }
+        // Empty this level and the corresponding index
+        level(i).clear();
+        if (i >= max_fully_allocated_level())
+          level(i).shrink_to_fit();
+        if (has_pgm(i))
+          pgm(i) = PGMType();
+      }
 
-        level(min_level).clear();
-        level(target) = std::move(alternate ? tmp_a : tmp_b);
-        level(target).resize(tmp_size);
+      level(min_level).clear();
+      level(target) = std::move(alternate ? tmp_a : tmp_b);
+      level(target).resize(tmp_size);
 
-        // Rebuild index, if needed
-        if (has_pgm(target))
-          pgm(target) = PGMType(level(target).begin(), level(target).end());
+      // Rebuild index, if needed
+      if (has_pgm(target))
+        pgm(target) = PGMType(level(target).begin(), level(target).end());
     }
 
     void insert(const Item &new_item) {
@@ -140,8 +138,6 @@ namespace pgm {
     }
 
     public:
-      // using key_type = K;
-      // using mapped_type = V;
       using value_type = Item;
       using size_type = size_t;
       using iterator = Iterator;
@@ -235,7 +231,7 @@ namespace pgm {
       iterator find(const K &key) const {
         for (auto i = min_level; i < used_levels; ++i) {
           if (level(i).empty())
-              continue;
+            continue;
 
           auto first = level(i).begin();
           auto last = level(i).end();
@@ -576,30 +572,6 @@ namespace pgm {
   };
 
   #pragma pack(push, 1)
-
-  // template<typename K, typename PGMType>
-  // class DynamicPGMIndexSet<K, PGMType>::ItemA {
-  //   const static K tombstone;
-
-  //   template<typename T = K, std::enable_if_t<std::is_pointer_v<T>, int> = 0>
-  //   static K get_tombstone() { return new std::remove_pointer_t<K>(); }
-
-  //   template<typename T = K, std::enable_if_t<std::is_arithmetic_v<T>, int> = 0>
-  //   static K get_tombstone() { return std::numeric_limits<K>::max(); }
-
-  //   public:
-  //     K first;
-  //     K second;
-
-  //     ItemA() { };
-  //     explicit ItemA(const K &key, const bool flag = false): first(key), second(flag ? tombstone : NULL) {}
-
-  //     operator K() const { return first; }
-  //     bool deleted() const { return this->second == tombstone; }
-  // };
-
-  // template<typename K, typename PGMType>
-  // const K DynamicPGMIndexSet<K, PGMType>::ItemA::tombstone = get_tombstone<K>();
 
   template<typename K, typename PGMType>
   class DynamicPGMIndexSet<K, PGMType>::Item {
