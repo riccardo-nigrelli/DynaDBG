@@ -4,10 +4,8 @@
 #include "pgm_index_dynamic_set.hpp"
 
 TEST_CASE("TEST") {
-  std::vector<uint32_t> data(1000000);
-  std::generate(data.begin(), data.end(), [] { return std::rand(); });
-  std::sort(data.begin(), data.end());
-
+  std::vector<uint32_t> data;
+  for (int i = 10; i < 1000010; ++i) data.push_back(i);
   pgm::DynamicPGMIndexSet<uint32_t> pgm_dynamic_set(data.begin(), data.end());
   
   REQUIRE(data.size() == pgm_dynamic_set.size());
