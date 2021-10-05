@@ -72,6 +72,13 @@ namespace DynaDBG {
         dynamic_index.erase(kmer::string_to_ulong(kmer));
       }
 
+      void remove_kmers(const std::string &path) {
+        const std::vector<uint64_t> data = kmc::db_parser_set(path);
+        for (const uint64_t &elem: data) {
+          dynamic_index.erase(elem);
+        }
+      }
+
       bool find_kmer(const std::string &kmer) { 
         return (dynamic_index.find(kmer::string_to_ulong(kmer)) != dynamic_index.end()) ? true : false;
       }
