@@ -10,7 +10,6 @@ int main(int argc, char **argv) {
   auto creation = [&data](benchmark::State &state) {
     for (auto _ : state) {
       DynaDBG::Pair dbg(data);
-      std::cout << "# Elem: " << dbg.size() << ", size: " << dbg.size_in_bytes() << "[bytes]\n";
     }
   };
 
@@ -34,9 +33,19 @@ int main(int argc, char **argv) {
     }
   };
   
-  benchmark::RegisterBenchmark("Creation", creation)->Iterations(10)->Unit(benchmark::kMillisecond);
-  benchmark::RegisterBenchmark("Add kmers", add)->Iterations(100000)->Unit(benchmark::kMillisecond);
-  benchmark::RegisterBenchmark("Remove kmers", remove)->Iterations(100000)->Unit(benchmark::kMillisecond);
+  if (argc == 2) {
+    benchmark::RegisterBenchmark("Creation", creation)->Iterations(1000)->Unit(benchmark::kMillisecond);
+  }
+  else if (argc == 3) {
+    benchmark::RegisterBenchmark("Creation", creation)->Iterations(1000)->Unit(benchmark::kMillisecond);
+    benchmark::RegisterBenchmark("Add kmers", add)->Iterations(1000)->Unit(benchmark::kMillisecond);
+  }
+  else if (argc ==  4) {
+    benchmark::RegisterBenchmark("Creation", creation)->Iterations(1000)->Unit(benchmark::kMillisecond);
+    benchmark::RegisterBenchmark("Add kmers", add)->Iterations(1000)->Unit(benchmark::kMillisecond);
+    benchmark::RegisterBenchmark("Remove kmers", remove)->Iterations(1000)->Unit(benchmark::kMillisecond);
+  }
+
   benchmark::RunSpecifiedBenchmarks();
 
   return 0;
