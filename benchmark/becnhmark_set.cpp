@@ -46,7 +46,9 @@ int main(int argc, char **argv) {
     benchmark::RegisterBenchmark("Remove kmers", remove)->Iterations(1000)->Unit(benchmark::kMillisecond);
   }
 
+  benchmark::Initialize(&argc, argv);
   benchmark::RunSpecifiedBenchmarks();
+  benchmark::Shutdown();
 
   return 0;
 }
