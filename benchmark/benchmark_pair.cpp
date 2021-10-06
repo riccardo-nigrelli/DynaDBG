@@ -5,7 +5,7 @@
 
 int main(int argc, char **argv) {
 
-  std::vector<std::pair<uint64_t, uint32_t>> data = kmc::db_parser_pair(argv[2]);
+  std::vector<std::pair<uint64_t, uint32_t>> data = kmc::db_parser_pair(argv[3]);
   
   auto creation = [&data](benchmark::State &state) {
     for (auto _ : state) {
@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
       DynaDBG::Pair dbg(data);
       state.ResumeTiming();
 
-      dbg.add_kmers(argv[3]);
+      dbg.add_kmers(argv[4]);
       state.counters.insert({ "IndexSize", dbg.size_in_bytes() });
     }
   };
@@ -31,19 +31,19 @@ int main(int argc, char **argv) {
       DynaDBG::Pair dbg(data);
       state.ResumeTiming();
 
-      dbg.remove_kmers(argv[4]);
+      dbg.remove_kmers(argv[5]);
       state.counters.insert({ "IndexSize", dbg.size_in_bytes() });
     }
   };
   
-  if (argc == 3) {
+  if (argc == 4) {
     benchmark::RegisterBenchmark("Creation", creation)->Iterations(1000)->Unit(benchmark::kMillisecond);
   }
-  else if (argc == 4) {
+  else if (argc == 5) {
     benchmark::RegisterBenchmark("Creation", creation)->Iterations(1000)->Unit(benchmark::kMillisecond);
     benchmark::RegisterBenchmark("Add kmers", add)->Iterations(1000)->Unit(benchmark::kMillisecond);
   }
-  else if (argc ==  5) {
+  else if (argc ==  6) {
     benchmark::RegisterBenchmark("Creation", creation)->Iterations(1000)->Unit(benchmark::kMillisecond);
     benchmark::RegisterBenchmark("Add kmers", add)->Iterations(1000)->Unit(benchmark::kMillisecond);
     benchmark::RegisterBenchmark("Remove kmers", remove)->Iterations(1000)->Unit(benchmark::kMillisecond);
