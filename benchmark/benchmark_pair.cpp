@@ -10,6 +10,7 @@ int main(int argc, char **argv) {
   auto creation = [&data](benchmark::State &state) {
     for (auto _ : state) {
       DynaDBG::Pair dbg(data);
+      state.counters.insert({ "IndexSize", dbg.size_in_bytes() });
     }
   };
 
@@ -20,6 +21,7 @@ int main(int argc, char **argv) {
       state.ResumeTiming();
 
       dbg.add_kmers(argv[3]);
+      state.counters.insert({ "IndexSize", dbg.size_in_bytes() });
     }
   };
 
@@ -30,6 +32,7 @@ int main(int argc, char **argv) {
       state.ResumeTiming();
 
       dbg.remove_kmers(argv[4]);
+      state.counters.insert({ "IndexSize", dbg.size_in_bytes() });
     }
   };
   

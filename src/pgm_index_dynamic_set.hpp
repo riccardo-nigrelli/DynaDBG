@@ -1,5 +1,5 @@
 // This file is a variation of Dynamic PGM-index <https://github.com/gvinciguerra/PGM-index>.
-// Copyright (c) 2021 Riccardo Nigrelli 
+// Copyright (c) 2021 Riccardo Nigrelli & Giorgio Vinciguerra.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
