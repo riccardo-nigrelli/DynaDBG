@@ -15,7 +15,7 @@ namespace DynaDBG {
     public:
       Pair(): dynamic_index() {}
       Pair(std::vector<std::pair<uint64_t, uint32_t>> &data): dynamic_index(data.begin(), data.end()) {}
-      ~Pair() { }
+      ~Pair() {}
 
       void add_kmer(const std::string &kmer, const uint32_t data) {
         dynamic_index.insert_or_assign(kmer::string_to_ulong(kmer), data);
@@ -54,9 +54,8 @@ namespace DynaDBG {
     public:
       Set(): dynamic_index() {}
       Set(std::vector<uint64_t> &data): dynamic_index(data.begin(), data.end()) {}
-    
-      ~Set() { }
-
+      ~Set() {}
+      
       void add_kmer(const std::string &kmer, const uint32_t data) {
         dynamic_index.insert_or_assign(kmer::string_to_ulong(kmer));
       }
