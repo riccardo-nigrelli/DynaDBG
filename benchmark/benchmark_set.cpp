@@ -11,16 +11,17 @@ int main(int argc, char **argv) {
   std::vector<uint64_t> data = kmc::db_parser_set(argv[3]);
   
   auto creation = [&data](benchmark::State &state) {
-    size_t size = 0;
+    size_t size = 0, num_elems = 0;
     for (auto _ : state) {
       DynaDBG::Set dbg(data);
       size = dbg.size_in_bytes();
+      num_elems = dbg.size();
     }
-    state.counters.insert({ "IndexSize", size });
+    state.counters.insert({{ "IndexSize", size }, { "NumElems", num_elems }});
   };
 
   auto add = [&data, argv](benchmark::State &state) {
-    size_t size = 0;
+    size_t size = 0, num_elems = 0;
     for (auto _ : state) {
       state.PauseTiming();
       DynaDBG::Set dbg(data);
@@ -28,12 +29,13 @@ int main(int argc, char **argv) {
 
       dbg.add_kmers(argv[4]);
       size = dbg.size_in_bytes();
+      num_elems = dbg.size();
     }
-    state.counters.insert({ "IndexSize", size });
+    state.counters.insert({{ "IndexSize", size }, { "NumElems", num_elems }});
   };
 
   auto remove = [&data, argv](benchmark::State &state) {
-    size_t size = 0;
+    size_t size = 0, num_elems = 0;
     for (auto _ : state) {
       state.PauseTiming();
       DynaDBG::Set dbg(data);
@@ -41,8 +43,9 @@ int main(int argc, char **argv) {
 
       dbg.remove_kmers(argv[5]);
       size = dbg.size_in_bytes();
+      num_elems = dbg.size();
     }
-    state.counters.insert({ "IndexSize", size });
+    state.counters.insert({{ "IndexSize", size }, { "NumElems", num_elems }});
   };
   
   if (argc == 4) {
