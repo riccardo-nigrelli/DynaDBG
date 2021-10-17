@@ -10,6 +10,17 @@ TEST_CASE("TEST") {
   
   REQUIRE(data.size() == pgm_dynamic_set.size());
 
+  size_t current_size_in_bytes = pgm_dynamic_set.size_in_bytes();
+  size_t current_size = pgm_dynamic_set.size();
+  for (int i = 10; i < 1000010; ++i) pgm_dynamic_set.insert_or_assign(i);
+  
+  REQUIRE(current_size_in_bytes < pgm_dynamic_set.size_in_bytes());
+  REQUIRE(current_size == pgm_dynamic_set.size());
+  
+  pgm_dynamic_set.index_cleaner();
+  REQUIRE(current_size == pgm_dynamic_set.size());
+  REQUIRE(current_size_in_bytes == pgm_dynamic_set.size_in_bytes());
+
   pgm_dynamic_set.insert_or_assign(2);
   pgm_dynamic_set.insert_or_assign(4);
   pgm_dynamic_set.insert_or_assign(8);

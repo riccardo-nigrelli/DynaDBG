@@ -1,5 +1,5 @@
 // This file is a variation of Dynamic PGM-index <https://github.com/gvinciguerra/PGM-index>.
-// Copyright (c) 2021 Riccardo Nigrelli & Giorgio Vinciguerra.
+// Copyright (c) 2021 Riccardo Nigrelli.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,10 +30,11 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include <typeinfo>
 
 namespace pgm {
 
-  template<typename K, typename PGMType = PGMIndex<K, 3>>
+  template<typename K, typename PGMType = PGMIndex<K, 16>>
   class DynamicPGMIndexSet {
     class Item;
     class Iterator;
@@ -138,8 +139,8 @@ namespace pgm {
     }
 
     public:
-      using value_type = Item;
-      using size_type = size_t;
+      // using value_type = Item;
+      // using size_type = size_t;
       using iterator = Iterator;
 
       /**
@@ -403,6 +404,47 @@ namespace pgm {
         for (auto &p: pgms)
           bytes += p.size_in_bytes();
         return bytes;
+      }
+
+      void index_cleaner() {
+        Level tmp_a, tmp_b;
+        auto alternate = true;
+
+        for (auto i = min_level; i < used_levels; ++i) {
+          if (level(i).empty())
+            continue;
+
+          auto first = level(i).begin();
+          auto last = level(i).end();
+
+          auto tmp_size = (alternate ? tmp_a : tmp_b).size();
+          (alternate ? tmp_b : tmp_a).resize(tmp_size + level(i).size());
+          auto tmp_it = (alternate ? tmp_a : tmp_b).begin();
+          auto out_it = (alternate ? tmp_b : tmp_a).begin();
+          tmp_size = std::distance(out_it, merge<false, true>(tmp_it, tmp_it + tmp_size, first, last, out_it));
+          (alternate ? tmp_b : tmp_a).resize(tmp_size);
+          alternate = !alternate;
+
+          level(i).clear();
+          if (has_pgm(i))
+            pgm(i) = PGMType();
+        }
+
+        std::vector<Item> result;
+        result.reserve((alternate ? tmp_a : tmp_b).size());
+        auto first = (alternate ? tmp_a : tmp_b).begin();
+        auto last = (alternate ? tmp_a : tmp_b).end();
+        for (auto it = first; it != last; ++it)
+          if (!it->deleted())
+            result.emplace_back(it->first);
+
+        for (auto i = min_level; i < used_levels; ++i) {
+          if (max_size(i) >= result.size()) {
+            level(i) = std::move(result);
+            if (has_pgm(i)) 
+              pgm(i) = PGMType(level(i).begin(), level(i).end());
+          }
+        }
       }
 
     private:
