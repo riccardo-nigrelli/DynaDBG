@@ -6,16 +6,16 @@
 
 int main(int argc, char **argv) {
   auto creation = [](benchmark::State &state, std::string path) {
-    std::vector<uint64_t> data = kmc::db_parser_set(path);
+    std::vector<std::pair<uint64_t, uint32_t>> data = kmc::db_parser_pair(path);
     for (auto _ : state) {
-      DynaDBG::Set dbg(data);
+      DynaDBG::Pair dbg(data);
     }
   };
   
   auto metrics = [](benchmark::State &state, std::string path) {
-    std::vector<uint64_t> data = kmc::db_parser_set(path);
+    std::vector<std::pair<uint64_t, uint32_t>> data = kmc::db_parser_pair(path);
     for (auto _ : state) {
-      DynaDBG::Set dbg(data);
+      DynaDBG::Pair dbg(data);
       state.counters.insert({{"NumElems", dbg.size()}, {"IndexSize", dbg.size_in_bytes()}});
     }
   };
