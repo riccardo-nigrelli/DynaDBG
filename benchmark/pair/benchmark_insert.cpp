@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
   };
 
   benchmark::Initialize(&argc, argv);
-  benchmark::RegisterBenchmark("Insert", insert, argv[1], argv[2])->Iterations(1000)->Unit(benchmark::kMillisecond);
+  benchmark::RegisterBenchmark("Insert", insert, argv[1], argv[2])->Iterations(10)->Repetitions(20)->Unit(benchmark::kMillisecond);
   benchmark::RegisterBenchmark("Metrics", metrics, argv[1], argv[2])->Iterations(1)->Unit(benchmark::kMillisecond);
   benchmark::RunSpecifiedBenchmarks();
   benchmark::Shutdown();
