@@ -617,16 +617,17 @@ namespace pgm {
 
   template<typename K, typename PGMType>
   class DynamicPGMIndexSet<K, PGMType>::Item {
-    bool flag;
-
+    const static K mask = (K)1 << (sizeof(K) * 8 - 1);
     public:
       K first;
 
       Item() = default;
-      explicit Item(const K &elem, const bool flag = false) : flag(flag), first(elem) {}
+      explicit Item(const K &elem, const bool flag = false) {
+        first = (elem & ~mask) | (flag ? mask : 0);
+      }
 
-      operator K() const { return first; }
-      bool deleted() const { return flag; }
+      operator K() const { return first & ~mask; }
+      bool deleted() const { return (first & mask) != 0; }
   };
 
   #pragma pack(pop)

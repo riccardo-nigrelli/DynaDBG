@@ -1,5 +1,6 @@
 #pragma once
   
+#include <fstream>
 #include <iostream>
 
 #include "kmer.hpp"
@@ -39,8 +40,18 @@ namespace DynaDBG {
         }
       }
 
-      bool find_kmer(const std::string &kmer) { 
-        return (dynamic_index.find(kmer::string_to_ulong(kmer)) != dynamic_index.end()) ? true : false;
+      void find_kmer(const std::string &path, const uint32_t kmer_len) {
+        std::ofstream file("membership.tsv");
+        if (!file.is_open()) {
+          std::cerr << "ERROR: unable to create the file." << std::endl;
+        }
+
+        std::vector<uint64_t> data = kmc::db_parser_set(path);
+        for (const uint64_t &elem : data) {
+          file << kmer::ulong_to_string(elem, kmer_len) << "\t" << ((dynamic_index.find(elem) != dynamic_index.end()) ? 1 : 0) << std::endl;
+        }
+
+        file.close();
       }
 
       size_t size_in_bytes() const { return dynamic_index.size_in_bytes(); }
@@ -80,8 +91,18 @@ namespace DynaDBG {
         dynamic_index.index_cleaner();
       }
 
-      bool find_kmer(const std::string &kmer) { 
-        return (dynamic_index.find(kmer::string_to_ulong(kmer)) != dynamic_index.end()) ? true : false;
+      void find_kmer(const std::string &path, const uint32_t kmer_len) {
+        std::ofstream file("membership.tsv");
+        if (!file.is_open()) {
+          std::cerr << "ERROR: unable to create the file." << std::endl;
+        }
+
+        std::vector<uint64_t> data = kmc::db_parser_set(path);
+        for (const uint64_t &elem : data) {
+          file << kmer::ulong_to_string(elem, kmer_len) << "\t" << ((dynamic_index.find(elem) != dynamic_index.end()) ? 1 : 0) << std::endl;
+        }
+
+        file.close();
       }
 
       size_t size_in_bytes() const { return dynamic_index.size_in_bytes(); }
