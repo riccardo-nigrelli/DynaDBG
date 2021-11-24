@@ -46,7 +46,8 @@ namespace kmc {
 
     std::vector<uint64> ulong_kmer;
     std::vector<uint64_t> data;
-
+    data.reserve(total_kmer);
+    
     while (database.ReadNextKmer(kmer, cnt)) {
       kmer.to_long(ulong_kmer);
       data.push_back(ulong_kmer[0]);
