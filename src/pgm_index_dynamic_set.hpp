@@ -16,7 +16,6 @@
 #pragma once
 
 #include "pgm/pgm_index.hpp"
-#include "pgm/pgm_index_dynamic.hpp"
 #include <cstddef>
 #include <cstdint>
 #include <algorithm>
@@ -243,67 +242,11 @@ namespace pgm {
           }
 
           auto it = lower_bound_bl(first, last, key);
-          if (it != level(i).end() && it->first == key)
+          if (it != level(i).end() && *it == key)
             return it->deleted() ? end() : iterator(this, i, it);
         }
 
         return end();
-      }
-
-      /**
-       * Returns a copy of the elements with key between and including @p lo and @p hi.
-       * @param lo lower endpoint of the range query
-       * @param hi upper endpoint of the range query, must be greater than or equal to @p lo
-       * @return a vector of key-value pairs satisfying the range query
-       */
-      std::vector<K> range(const K &lo, const K &hi) const {
-        if (lo > hi)
-          throw std::invalid_argument("lo > hi");
-
-        Level tmp_a;
-        Level tmp_b;
-        auto alternate = true;
-
-        for (auto i = min_level; i < used_levels; ++i) {
-          if (level(i).empty())
-            continue;
-
-          auto lo_first = level(i).begin();
-          auto lo_last = level(i).end();
-          auto hi_first = level(i).begin();
-          auto hi_last = level(i).end();
-          if (has_pgm(i)) {
-            auto range = pgm(i).search(lo);
-            lo_first = level(i).begin() + range.lo;
-            lo_last = level(i).begin() + range.hi;
-            range = pgm(i).search(hi);
-            hi_first = level(i).begin() + range.lo;
-            hi_last = level(i).begin() + range.hi;
-          }
-
-          auto it_lo = lower_bound_bl(lo_first, lo_last, lo);
-          auto it_hi = std::upper_bound(std::max(it_lo, hi_first), hi_last, hi);
-          auto range_size = std::distance(it_lo, it_hi);
-          if (range_size == 0)
-            continue;
-
-          auto tmp_size = (alternate ? tmp_a : tmp_b).size();
-          (alternate ? tmp_b : tmp_a).resize(tmp_size + range_size);
-          auto tmp_it = (alternate ? tmp_a : tmp_b).begin();
-          auto out_it = (alternate ? tmp_b : tmp_a).begin();
-          tmp_size = std::distance(out_it, merge<false, false>(tmp_it, tmp_it + tmp_size, it_lo, it_hi, out_it));
-          (alternate ? tmp_b : tmp_a).resize(tmp_size);
-          alternate = !alternate;
-        }
-
-        std::vector<K> result;
-        result.reserve((alternate ? tmp_a : tmp_b).size());
-        auto first = (alternate ? tmp_a : tmp_b).begin();
-        auto last = (alternate ? tmp_a : tmp_b).end();
-        for (auto it = first; it != last; ++it)
-          if (!it->deleted())
-            result.emplace_back(it->first);
-        return result;
       }
 
       /**
@@ -330,11 +273,11 @@ namespace pgm {
           }
 
           for (auto it = lower_bound_bl(first, last, key);
-            it != level(i).end() && (!lb_set || it->first < lb->first); ++it) {
+            it != level(i).end() && (!lb_set || *it < *lb); ++it) {
             if (it->deleted())
-              deleted.emplace(it->first);
-            else if (deleted.find(it->first) == deleted.end()) {
-              if (it->first == key)
+              deleted.emplace(*it);
+            else if (deleted.find(*it) == deleted.end()) {
+              if (*it == key)
                 return iterator(this, i, it);
               lb = it;
               lb_level = i;
@@ -436,7 +379,7 @@ namespace pgm {
         auto last = (alternate ? tmp_a : tmp_b).end();
         for (auto it = first; it != last; ++it)
           if (!it->deleted())
-            result.emplace_back(it->first);
+            result.emplace_back(*it);
 
         for (auto i = min_level; i < used_levels; ++i) {
           if (max_size(i) >= result.size()) {
@@ -494,6 +437,90 @@ namespace pgm {
       }
   };
   
+  namespace internal {
+
+    /* LoserTree implementation adapted from Timo Bingmann's https://tlx.github.io and http://stxxl.org, and from
+    * Johannes Singler's http://algo2.iti.uni-karlsruhe.de/singler/mcstl. These three libraries are distributed under the
+    * Boost Software License 1.0. */
+    template<typename T>
+    class LoserTreeSet {
+      using Source = uint8_t;
+
+      struct Loser {
+        T key;         ///< Copy of the current key in the sequence.
+        Source source; ///< Index of the sequence.
+      };
+
+      Source k;                  ///< Smallest power of 2 greater than the number of nodes.
+      std::vector<Loser> losers; ///< Vector of size 2k containing loser tree nodes.
+
+      static uint64_t next_pow2(uint64_t x) {
+        return x == 1 ? 1 : uint64_t(1) << (sizeof(unsigned long long) * 8 - __builtin_clzll(x - 1));
+      }
+
+      /** Called recursively to build the initial tree. */
+      Source init_winner(const Source &root) {
+        if (root >= k)
+          return root;
+
+        auto left = init_winner(2 * root);
+        auto right = init_winner(2 * root + 1);
+        if (losers[right].key >= losers[left].key) {
+          losers[root] = losers[right];
+          return left;
+        } else {
+          losers[root] = losers[left];
+          return right;
+        }
+      }
+
+      public:
+
+        LoserTreeSet() = default;
+
+        explicit LoserTreeSet(const Source &ik) : k(next_pow2(ik)), losers(2 * k) {
+          for (auto i = ik - 1u; i < k; ++i) {
+            losers[i + k].key = std::numeric_limits<T>::max();
+            losers[i + k].source = std::numeric_limits<Source>::max();
+          }
+        }
+
+        /** Returns the index of the sequence with the smallest element. */
+        Source min_source() const {
+          assert(losers[0].source != std::numeric_limits<Source>::max());
+          return losers[0].source;
+        }
+
+        /** Inserts the initial element of the sequence source. */
+        void insert_start(const T &key, const Source &source) {
+          Source pos = k + source;
+          assert(pos < losers.size());
+          losers[pos].source = source;
+          losers[pos].key = key;
+        }
+
+        /** Deletes the smallest element and insert a new element in its place. */
+        void delete_min_insert(const T &_key) {
+          auto source = losers[0].source;
+          auto key = _key ? _key : std::numeric_limits<T>::max();
+
+          for (auto pos = (k + source) / 2; pos > 0; pos /= 2) {
+            if (losers[pos].key < key || (key >= losers[pos].key && losers[pos].source < source)) {
+              std::swap(losers[pos].source, source);
+              std::swap(losers[pos].key, key);
+            }
+          }
+
+          losers[0].source = source;
+          losers[0].key = key;
+        }
+
+        /** Initializes the tree. */
+        void init() { losers[0] = losers[init_winner(1)]; }
+    };
+
+    } // namespace internal
+
   template<typename K, typename PGMType>
   class DynamicPGMIndexSet<K, PGMType>::Iterator {
     friend class DynamicPGMIndexSet;
@@ -512,7 +539,7 @@ namespace pgm {
     Cursor current;                 ///< Pair (level number, iterator to the current element).
     bool initialized;               ///< true iff the members tree and iterators have been initialized.
     uint8_t unconsumed_count;       ///< Number of iterators that have not yet reached the end.
-    internal::LoserTree<K> tree;    ///< Tournament tree with one leaf for each iterator.
+    internal::LoserTreeSet<K> tree;    ///< Tournament tree with one leaf for each iterator.
     std::vector<Cursor> iterators;  ///< Vector with pairs (level number, iterator).
 
     void lazy_initialize() {
@@ -529,19 +556,19 @@ namespace pgm {
         size_t lo = 0;
         size_t hi = level.size();
         if (super->has_pgm(i)) {
-          auto range = super->pgm(i).search(current.iterator->first);
+          auto range = super->pgm(i).search(*current.iterator);
           lo = range.lo;
           hi = range.hi;
         }
 
-        auto pos = std::upper_bound(level.begin() + lo, level.begin() + hi, current.iterator->first);
+        auto pos = std::upper_bound(level.begin() + lo, level.begin() + hi, *(current.iterator));
         if (pos != level.end())
           iterators.emplace_back(i, pos);
       }
 
       tree = decltype(tree)(iterators.size());
       for (size_t i = 0; i < iterators.size(); ++i)
-        tree.insert_start(&iterators[i].iterator->first, i);
+        tree.insert_start(*iterators[i].iterator, i);
       tree.init();
 
       initialized = true;
@@ -560,17 +587,17 @@ namespace pgm {
         auto result = it_min.iterator;
         ++it_min.iterator;
         if (it_min.iterator == super->level(level_number).end()) {
-          tree.delete_min_insert(nullptr);
+          tree.delete_min_insert(std::numeric_limits<K>::max());
           --unconsumed_count;
         } else
-          tree.delete_min_insert(&it_min.iterator->first);
+          tree.delete_min_insert(*it_min.iterator);
         return Cursor(level_number, result);
       };
 
       Cursor tmp;
       do {
         tmp = step();
-        while (unconsumed_count > 0 && iterators[tree.min_source()].iterator->first == tmp.iterator->first)
+        while (unconsumed_count > 0 && *iterators[tree.min_source()].iterator == *tmp.iterator)
           step();
       } while (unconsumed_count > 0 && tmp.iterator->deleted());
 
@@ -618,13 +645,14 @@ namespace pgm {
   template<typename K, typename PGMType>
   class DynamicPGMIndexSet<K, PGMType>::Item {
     const static K mask = (K)1 << (sizeof(K) * 8 - 1);
-    public:
+    
+    private:
       K first;
 
+    public:
+
       Item() = default;
-      explicit Item(const K &elem, const bool flag = false) {
-        first = (elem & ~mask) | (flag ? mask : 0);
-      }
+      explicit Item(const K &elem, const bool flag = false) { first = (elem & ~mask) | (flag ? mask : 0); }
 
       operator K() const { return first & ~mask; }
       bool deleted() const { return (first & mask) != 0; }
