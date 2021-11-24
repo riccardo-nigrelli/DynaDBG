@@ -1,4 +1,4 @@
-set(benchmarks creation insert remove)
+set(benchmarks creation insert remove find add_find remove_find)
 foreach(benchmark IN LISTS benchmarks)
   add_executable(dbg_pair_${benchmark} pair/benchmark_${benchmark}.cpp ${KMC_SRC})
   target_link_libraries(dbg_pair_${benchmark} dynadbglib benchmark::benchmark)
