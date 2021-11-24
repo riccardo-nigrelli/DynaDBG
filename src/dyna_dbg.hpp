@@ -76,7 +76,6 @@ namespace DynaDBG {
         for (const uint64_t &elem: data) {
           dynamic_index.insert_or_assign(elem);
         }
-        dynamic_index.index_cleaner();
       }
 
       void remove_kmer(const std::string &kmer) {
@@ -88,7 +87,6 @@ namespace DynaDBG {
         for (const uint64_t &elem: data) {
           dynamic_index.erase(elem);
         }
-        dynamic_index.index_cleaner();
       }
 
       void find_kmer(const std::string &path, const uint32_t kmer_len) {
