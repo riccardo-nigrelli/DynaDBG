@@ -3,32 +3,32 @@
 #include "catch.hpp"
 #include "pgm_index_dynamic_set.hpp"
 
-TEST_CASE("TEST") {
-  std::vector<uint32_t> data;
-  for (int i = 10; i < 1000010; ++i) data.push_back(i);
-  pgm::DynamicPGMIndexSet<uint32_t> pgm_dynamic_set(data.begin(), data.end());
-  REQUIRE(data.size() == pgm_dynamic_set.size());
-
-  size_t current_size_in_bytes = pgm_dynamic_set.size_in_bytes();
-  size_t current_size = pgm_dynamic_set.size();
-  for (int i = 10; i < 1000010; ++i) pgm_dynamic_set.insert_or_assign(i);
+TEST_CASE("DYNAMIC_PGM_INDEX_SET") {
+  std::vector<uint64_t> data;
+  for (uint64_t i = 0; i < 100000; ++i) data.push_back(i);
   
-  REQUIRE(current_size_in_bytes < pgm_dynamic_set.size_in_bytes());
-  REQUIRE(current_size == pgm_dynamic_set.size());
+  pgm::DynamicPGMIndexSet<uint64_t> index(data.begin(), data.end());
+  REQUIRE(index.size() == data.size());
+  REQUIRE_FALSE(index.empty());
+
+  for (const uint64_t &elem : data) index.erase(elem);
+  REQUIRE(index.size() == 0);
+  REQUIRE(index.empty());
+  for (const uint64_t &elem : data) REQUIRE(index.find(elem) == index.end());
   
-  pgm_dynamic_set.index_cleaner();
-  REQUIRE(current_size == pgm_dynamic_set.size());
-  REQUIRE(current_size_in_bytes == pgm_dynamic_set.size_in_bytes());
+  for (const uint64_t &elem : data) index.insert_or_assign(elem);
+  REQUIRE(index.size() == data.size());
+  REQUIRE_FALSE(index.empty());
 
-  pgm_dynamic_set.insert_or_assign(2);
-  pgm_dynamic_set.insert_or_assign(4);
-  pgm_dynamic_set.insert_or_assign(8);
+  for (const uint64_t &elem : data) REQUIRE(index.find(elem) != index.end());
+  
+  for (const uint64_t &elem : data) index.insert_or_assign(elem);
+  REQUIRE(index.size() == data.size());
 
-  REQUIRE(pgm_dynamic_set.find(2) != pgm_dynamic_set.end());
-  REQUIRE(pgm_dynamic_set.find(1) == pgm_dynamic_set.end());
-  REQUIRE(data.size() + 3 == pgm_dynamic_set.size());
-
-  pgm_dynamic_set.erase(4);
-  REQUIRE(pgm_dynamic_set.find(4) == pgm_dynamic_set.end());
-  REQUIRE(data.size() + 2 == pgm_dynamic_set.size());
+  index.erase(5000);
+  REQUIRE(index.size() == data.size() - 1);
+  REQUIRE(index.find(5000) == index.end());
+  index.insert_or_assign(5000);
+  REQUIRE(index.size() == data.size());
+  REQUIRE(index.find(5000) != index.end());
 }
