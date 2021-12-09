@@ -138,8 +138,6 @@ namespace pgm {
     }
 
     public:
-      // using value_type = Item;
-      // using size_type = size_t;
       using iterator = Iterator;
 
       /**
@@ -169,17 +167,15 @@ namespace pgm {
       }
 
       /**
-       * Constructs the container on the sorted data in the range [first, last).
-       * @tparam Iterator
-       * @param first, last the range containing the sorted elements to be indexed
+       * Constructs the container on the sorted KMC database.
+       * @param database KMC database FileWrapper
        * @param base determines the size of the ith level as base^i
        * @param buffer_level determines the size of level 0, equal to the sum of base^i for i = 0, ..., buffer_level
        * @param index_level the minimum level at which an index is constructed to speed up searches
        */
-      template<typename Iterator>
-      DynamicPGMIndexSet(Iterator first, Iterator last, uint8_t base = 8, uint8_t buffer_level = 0, uint8_t index_level = 0)
+      DynamicPGMIndexSet(KMC::FileWrapper &database, uint8_t base = 8, uint8_t buffer_level = 0, uint8_t index_level = 0)
         : DynamicPGMIndexSet(base, buffer_level, index_level) {
-        size_t n = std::distance(first, last);
+        size_t n = database.size();
         used_levels = std::max<uint8_t>(ceil_log_base(n), min_level) + 1;
         levels.resize(std::max<uint8_t>(used_levels, 32) - min_level + 1);
         level(min_level).reserve(buffer_max_size);
@@ -191,16 +187,16 @@ namespace pgm {
           return;
         }
 
+        auto first = database.begin();
         // Copy only the first of each group of pairs with same key value
         auto &target = level(used_levels - 1);
         target.resize(n);
         auto out = target.begin();
         *out++ = Item(*first);
-        while (++first != last) {
+        while (++first != database.end()) {
           if (*first < *std::prev(out))
             throw std::invalid_argument("Range is not sorted");
-          if (*first != *std::prev(out))
-            *out++ = Item(*first);
+          *out++ = Item(*first);
         }
         target.resize(std::distance(target.begin(), out));
 
@@ -650,7 +646,6 @@ namespace pgm {
       K first;
 
     public:
-
       Item() = default;
       explicit Item(const K &elem, const bool flag = false) { first = (elem & ~mask) | (flag ? mask : 0); }
 
