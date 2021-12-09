@@ -1,34 +1,42 @@
 #include <iostream>
 
 #include "catch.hpp"
+#include "kmc_utils.hpp"
 #include "pgm_index_dynamic_set.hpp"
 
 TEST_CASE("DYNAMIC_PGM_INDEX_SET") {
-  std::vector<uint64_t> data;
-  for (uint64_t i = 0; i < 100000; ++i) data.push_back(i);
-  
-  pgm::DynamicPGMIndexSet<uint64_t> index(data.begin(), data.end());
-  REQUIRE(index.size() == data.size());
+  KMC::FileWrapper file("../data/20K.res");
+  pgm::DynamicPGMIndexSet<uint64_t> index(file);
+
+  REQUIRE(index.size() == file.size());
   REQUIRE_FALSE(index.empty());
 
-  for (const uint64_t &elem : data) index.erase(elem);
+  KMC::FileWrapper _file("../data/20K.res");
+  for (auto it = _file.begin(); it != _file.end(); ++it) index.erase(*it);
   REQUIRE(index.size() == 0);
-  REQUIRE(index.empty());
-  for (const uint64_t &elem : data) REQUIRE(index.find(elem) == index.end());
+  // REQUIRE(index.empty());
+
+  KMC::FileWrapper _file_("../data/20K.res");
+  for (auto it = _file_.begin(); it != _file_.end(); ++it) REQUIRE(index.find(*it) == index.end());
   
-  for (const uint64_t &elem : data) index.insert_or_assign(elem);
-  REQUIRE(index.size() == data.size());
+  KMC::FileWrapper __file("../data/20K.res");
+  for (auto it = __file.begin(); it != __file.end(); ++it) index.insert_or_assign(*it);
+  REQUIRE(index.size() == __file.size());
   REQUIRE_FALSE(index.empty());
 
-  for (const uint64_t &elem : data) REQUIRE(index.find(elem) != index.end());
+  KMC::FileWrapper __file_("../data/20K.res");
+  for (auto it = __file_.begin(); it != __file_.end(); ++it) REQUIRE(index.find(*it) != index.end());
   
-  for (const uint64_t &elem : data) index.insert_or_assign(elem);
-  REQUIRE(index.size() == data.size());
+  KMC::FileWrapper __file__("../data/20K.res");
+  for (auto it = __file__.begin(); it != __file__.end(); ++it) index.insert_or_assign(*it);
+  REQUIRE(index.size() == __file__.size());
 
-  index.erase(5000);
-  REQUIRE(index.size() == data.size() - 1);
-  REQUIRE(index.find(5000) == index.end());
-  index.insert_or_assign(5000);
-  REQUIRE(index.size() == data.size());
-  REQUIRE(index.find(5000) != index.end());
+  REQUIRE(index.find(5933537886150) != index.end());
+  size_t current_size = index.size();
+  index.erase(5933537886150);
+  REQUIRE(index.size() == current_size - 1);
+  REQUIRE(index.find(5933537886150) == index.end());
+  index.insert_or_assign(5933537886150);
+  REQUIRE(index.size() == current_size);
+  REQUIRE(index.find(5933537886150) != index.end());
 }
