@@ -27,7 +27,7 @@ namespace kmer {
     kmer.from_string(k);
 
     kmer.to_long(v);
-    return v[0];
+    return v.front();
   }
 
   /**
@@ -43,7 +43,7 @@ namespace kmer {
     
     std::vector<uint64> v;
     kmer.to_long(v);
-    return v[0];
+    return v.front();
   }
   
   /**
@@ -59,6 +59,6 @@ namespace kmer {
     
     std::vector<uint64> v;
     kmer.to_long(v);
-    return v[0];
+    return v.front();
   }
 }
