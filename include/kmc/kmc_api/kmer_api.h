@@ -50,6 +50,7 @@ protected:
 	{
 		return (kmer_data[(pos + byte_alignment) >> 5] >> (62 - (((pos + byte_alignment) & 31) * 2))) & 3;
 	}
+	
 	// ----------------------------------------------------------------------------------
 	inline void from_binary(const char* kmer)
 	{
@@ -273,6 +274,36 @@ public:
 		}
 		kmer_length = length;
 	};
+
+	inline void SHL_insert2bits(uchar val)
+	{
+		kmer_data[0] <<= 2;
+		if (byte_alignment)
+		{
+			uint64 mask = ~(((1ull << 2 * byte_alignment) - 1) << (64 - 2 * byte_alignment));
+			kmer_data[0] &= mask;
+		}
+		for (uint32 i = 1; i < no_of_rows; ++i)
+		{
+			kmer_data[i - 1] += kmer_data[i] >> 62;
+			kmer_data[i] <<= 2;
+		}
+		kmer_data[no_of_rows - 1] += (uint64)val << (62 - (((kmer_length - 1 + byte_alignment) & 31) * 2));
+	}
+	
+	//----------------------------------------------------------------------------------
+	inline void SHR_insert2bits(uchar val)
+	{
+		for (uint32 i = no_of_rows - 1; i > 0; --i)
+		{
+			kmer_data[i] >>= 2;
+			kmer_data[i] += kmer_data[i - 1] << 62;
+		}
+		kmer_data[0] >>= 2;
+		kmer_data[no_of_rows - 1] &= ~((1ull << ((32 - (kmer_length + byte_alignment - (no_of_rows - 1) * 32)) * 2)) - 1);//mask falling of symbol
+		kmer_data[0] += ((uint64)val << 62) >> (byte_alignment * 2);
+	}
+
 //-----------------------------------------------------------------------
 // The destructor
 //-----------------------------------------------------------------------
@@ -477,35 +508,6 @@ public:
 				return false;
 		}
 		return from_string_impl(kmer_string.begin(), static_cast<uint32>(kmer_string.length()));		
-	}
-
-	inline void SHL_insert2bits(uchar val)
-	{
-		kmer_data[0] <<= 2;
-		if (byte_alignment)
-		{
-			uint64 mask = ~(((1ull << 2 * byte_alignment) - 1) << (64 - 2 * byte_alignment));
-			kmer_data[0] &= mask;
-		}
-		for (uint32 i = 1; i < no_of_rows; ++i)
-		{
-			kmer_data[i - 1] += kmer_data[i] >> 62;
-			kmer_data[i] <<= 2;
-		}
-		kmer_data[no_of_rows - 1] += (uint64)val << (62 - (((kmer_length - 1 + byte_alignment) & 31) * 2));
-	}
-	
-	//----------------------------------------------------------------------------------
-	inline void SHR_insert2bits(uchar val)
-	{
-		for (uint32 i = no_of_rows - 1; i > 0; --i)
-		{
-			kmer_data[i] >>= 2;
-			kmer_data[i] += kmer_data[i - 1] << 62;
-		}
-		kmer_data[0] >>= 2;
-		kmer_data[no_of_rows - 1] &= ~((1ull << ((32 - (kmer_length + byte_alignment - (no_of_rows - 1) * 32)) * 2)) - 1);//mask falling of symbol
-		kmer_data[0] += ((uint64)val << 62) >> (byte_alignment * 2);
 	}
 
 	//-----------------------------------------------------------------------
