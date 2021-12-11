@@ -6,16 +6,14 @@
 
 int main(int argc, char **argv) {
   auto insert = [](benchmark::State &state, std::string path, std::string pathToInsert) {
-    std::vector<uint64_t> data = kmc::db_parser_set(path);
-    DynaDBG::Set dbg(data);
+    DynaDBG::Set dbg(path);
     for (auto _ : state) {
       dbg.add_kmers(pathToInsert);
     }
   };
   
   auto metrics = [](benchmark::State &state, std::string path, std::string pathToInsert) {
-    std::vector<uint64_t> data = kmc::db_parser_set(path);
-    DynaDBG::Set dbg(data);      
+    DynaDBG::Set dbg(path);      
     for (auto _ : state) {
       state.counters.insert({{"NumElems", dbg.size()}, {"IndexSize", dbg.size_in_bytes()}});
       dbg.add_kmers(pathToInsert);

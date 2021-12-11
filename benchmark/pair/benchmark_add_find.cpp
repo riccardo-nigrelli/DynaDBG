@@ -6,16 +6,18 @@
 
 int main(int argc, char **argv) {
   auto find = [](benchmark::State &state, std::string path, std::string pathToSearch, uint32_t kmer_size) {
-    std::vector<uint64_t> data = kmc::db_parser_set(path);
-    DynaDBG::Set dbg(data);
-    dbg.add_kmers(pathToSearch);
+    std::vector<std::pair<uint64_t, uint32_t>> data = KMC::db_parser_pair(path);
+    DynaDBG::Pair dbg(data);
     for (auto _ : state) {
       dbg.find_kmer(pathToSearch, kmer_size);
     }
   };
   
   benchmark::Initialize(&argc, argv);
-  benchmark::RegisterBenchmark("Find", find, argv[1], argv[2], std::atoi(argv[3]))->Iterations(1)->Repetitions(1)->Unit(benchmark::kMillisecond);
+  benchmark::RegisterBenchmark(
+    "Find", find,
+    argv[1], argv[2], std::atoi(argv[3])
+  )->Iterations(1)->Repetitions(1)->Unit(benchmark::kMillisecond);
   benchmark::RunSpecifiedBenchmarks();
   benchmark::Shutdown();
 }

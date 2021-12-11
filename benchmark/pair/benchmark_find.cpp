@@ -6,7 +6,7 @@
 
 int main(int argc, char **argv) {
   auto find = [](benchmark::State &state, std::string path, std::string pathToSearch, uint32_t kmer_size) {
-    std::vector<std::pair<uint64_t, uint32_t>> data = kmc::db_parser_pair(path);
+    std::vector<std::pair<uint64_t, uint32_t>> data = KMC::db_parser_pair(path);
     DynaDBG::Pair dbg(data);
     for (auto _ : state) {
       dbg.find_kmer(pathToSearch, kmer_size);

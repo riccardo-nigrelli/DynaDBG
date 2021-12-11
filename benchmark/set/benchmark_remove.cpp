@@ -6,21 +6,18 @@
 
 int main(int argc, char **argv) {
   auto remove = [](benchmark::State &state, std::string path, std::string pathToRemove) {
-    std::vector<uint64_t> data = kmc::db_parser_set(path);
-    DynaDBG::Set dbg(data);
+    DynaDBG::Set dbg(path);
     for (auto _ : state) {
       dbg.remove_kmers(pathToRemove);
     }
   };
   
   auto metrics = [](benchmark::State &state, std::string path, std::string pathToRemove) {
-    std::vector<uint64_t> data = kmc::db_parser_set(path);
-    DynaDBG::Set dbg(data);      
+    DynaDBG::Set dbg(path);
     for (auto _ : state) {
       state.counters.insert({{"NumElems", dbg.size()}, {"IndexSize", dbg.size_in_bytes()}});
-
       dbg.remove_kmers(pathToRemove);
-      state.counters.insert({{"NumElemsAfterInsert", dbg.size()}, {"IndexSizeAfterInsert", dbg.size_in_bytes()}});
+      state.counters.insert({{"NumElemsAfterRemove", dbg.size()}, {"IndexSizeAfterRemove", dbg.size_in_bytes()}});
     }
   };
 
