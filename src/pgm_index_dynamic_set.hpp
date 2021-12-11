@@ -168,36 +168,54 @@ namespace pgm {
 
       /**
        * Constructs the container on the sorted KMC database.
-       * @param database KMC database FileWrapper
+       * @param path KMC file database path
        * @param base determines the size of the ith level as base^i
        * @param buffer_level determines the size of level 0, equal to the sum of base^i for i = 0, ..., buffer_level
        * @param index_level the minimum level at which an index is constructed to speed up searches
        */
-      DynamicPGMIndexSet(KMC::FileWrapper &database, uint8_t base = 8, uint8_t buffer_level = 0, uint8_t index_level = 0)
+      DynamicPGMIndexSet(const std::string &path, uint8_t base = 8, uint8_t buffer_level = 0, uint8_t index_level = 0)
         : DynamicPGMIndexSet(base, buffer_level, index_level) {
-        size_t n = database.size();
-        used_levels = std::max<uint8_t>(ceil_log_base(n), min_level) + 1;
+        // size_t n = database.size();
+        CKMCFile database;
+        if (!database.OpenForListing(path)) throw std::invalid_argument("Unable to open the specified file");
+        if (database.IsKMC2()) throw std::invalid_argument("Range is not sorted");
+
+        CKMCFileInfo info;
+        database.Info(info);
+
+        used_levels = std::max<uint8_t>(ceil_log_base(info.total_kmers), min_level) + 1;
         levels.resize(std::max<uint8_t>(used_levels, 32) - min_level + 1);
         level(min_level).reserve(buffer_max_size);
         for (uint8_t i = min_level + 1; i < max_fully_allocated_level(); ++i)
           level(i).reserve(max_size(i));
 
-        if (n == 0) {
+        if (info.total_kmers == 0) {
           used_levels = min_level;
           return;
         }
 
-        auto first = database.begin();
+        // auto first = database.begin();
+        // auto last = database.end();
         // Copy only the first of each group of pairs with same key value
         auto &target = level(used_levels - 1);
-        target.resize(n);
+        target.resize(info.total_kmers);
         auto out = target.begin();
-        *out++ = Item(*first);
-        while (++first != database.end()) {
+
+        uint32 cnt;
+        CKmerAPI kmer(info.kmer_length);
+        std::vector<K> kmer_ulong;
+        while(database.ReadNextKmer(kmer, cnt)) {
+          kmer.to_long(kmer_ulong);
+          *out++ = Item(kmer_ulong[0]);
+        }
+
+        /*
+          *out++ = Item(*first);
+        while (++first != last) {
           if (*first < *std::prev(out))
             throw std::invalid_argument("Range is not sorted");
           *out++ = Item(*first);
-        }
+        }*/
         target.resize(std::distance(target.begin(), out));
 
         if (has_pgm(used_levels - 1)) {

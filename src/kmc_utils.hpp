@@ -30,7 +30,7 @@ namespace KMC {
 
     return data;
   }
-
+/*
   class Iterator {
     uint64_t kmer;
     CKMCFile *database;
@@ -60,12 +60,7 @@ namespace KMC {
         return *this;
       }
 
-      bool operator==(const Iterator &rhs) const {
-        if (is_end()) return rhs.is_end();
-        if (rhs.is_end()) return false;
-        return database == rhs.database;
-      }
-
+      bool operator==(const Iterator &rhs) const { return database == rhs.database; }
       bool operator!=(const Iterator &rhs) const { return !operator==(rhs); }
   };
 
@@ -98,7 +93,7 @@ namespace KMC {
 
       uint32_t kmer_len() const { return info.kmer_length; }
       uint64_t size() const { return info.total_kmers; }
-  };
+  };*/
 
   std::vector<uint64_t> db_parser_set(const std::string &path) {
     CKMCFile database;
