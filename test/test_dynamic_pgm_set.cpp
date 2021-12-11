@@ -5,31 +5,57 @@
 #include "pgm_index_dynamic_set.hpp"
 
 TEST_CASE("DYNAMIC_PGM_INDEX_SET") {
-  KMC::FileWrapper file("../data/20K.res");
-  pgm::DynamicPGMIndexSet<uint64_t> index(file);
 
-  REQUIRE(index.size() == file.size());
+  CKMCFile file;
+  CKMCFileInfo info;
+  file.OpenForListing("../data/20K.res");
+  file.Info(info);
+
+  pgm::DynamicPGMIndexSet<uint64_t> index("../data/20K.res");
+  REQUIRE(index.size() == info.total_kmers);
   REQUIRE_FALSE(index.empty());
 
-  KMC::FileWrapper _file("../data/20K.res");
-  for (auto it = _file.begin(); it != _file.end(); ++it) index.erase(*it);
+  uint32 cnt;
+  CKmerAPI kmer(info.kmer_length);
+  std::vector<uint64_t> kmer_ulong;
+
+  while (file.ReadNextKmer(kmer, cnt)) {
+    kmer.to_long(kmer_ulong);
+    index.erase(kmer_ulong[0]);
+  }
   REQUIRE(index.size() == 0);
-  // REQUIRE(index.empty());
+  REQUIRE(index.empty());
 
-  KMC::FileWrapper _file_("../data/20K.res");
-  for (auto it = _file_.begin(); it != _file_.end(); ++it) REQUIRE(index.find(*it) == index.end());
-  
-  KMC::FileWrapper __file("../data/20K.res");
-  for (auto it = __file.begin(); it != __file.end(); ++it) index.insert_or_assign(*it);
-  REQUIRE(index.size() == __file.size());
+  CKMCFile _file;
+  _file.OpenForListing("../data/20K.res");
+  while (_file.ReadNextKmer(kmer, cnt)) {
+    kmer.to_long(kmer_ulong);
+    REQUIRE(index.find(kmer_ulong[0]) == index.end());
+  }
+
+  CKMCFile _file_;
+  _file_.OpenForListing("../data/20K.res");
+  while (_file_.ReadNextKmer(kmer, cnt)) {
+    kmer.to_long(kmer_ulong);
+    index.insert_or_assign(kmer_ulong[0]);
+  }
+  REQUIRE(index.size() == info.total_kmers);
   REQUIRE_FALSE(index.empty());
 
-  KMC::FileWrapper __file_("../data/20K.res");
-  for (auto it = __file_.begin(); it != __file_.end(); ++it) REQUIRE(index.find(*it) != index.end());
+  CKMCFile __file;
+  __file.OpenForListing("../data/20K.res");
+  while (file.ReadNextKmer(kmer, cnt)) {
+    kmer.to_long(kmer_ulong);
+    REQUIRE(index.find(kmer_ulong[0]) != index.end());
+  }
   
-  KMC::FileWrapper __file__("../data/20K.res");
-  for (auto it = __file__.begin(); it != __file__.end(); ++it) index.insert_or_assign(*it);
-  REQUIRE(index.size() == __file__.size());
+  CKMCFile __file_;
+  __file_.OpenForListing("../data/20K.res");
+  while (__file_.ReadNextKmer(kmer, cnt)) {
+    kmer.to_long(kmer_ulong);
+    index.insert_or_assign(kmer_ulong[0]);
+  }
+  REQUIRE(index.size() == info.total_kmers);
 
   REQUIRE(index.find(5933537886150) != index.end());
   size_t current_size = index.size();
