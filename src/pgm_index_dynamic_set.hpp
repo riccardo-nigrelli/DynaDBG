@@ -175,7 +175,6 @@ namespace pgm {
        */
       DynamicPGMIndexSet(const std::string &path, uint8_t base = 8, uint8_t buffer_level = 0, uint8_t index_level = 0)
         : DynamicPGMIndexSet(base, buffer_level, index_level) {
-        // size_t n = database.size();
         CKMCFile database;
         if (!database.OpenForListing(path)) throw std::invalid_argument("Unable to open the specified file");
         if (database.IsKMC2()) throw std::invalid_argument("Range is not sorted");
@@ -194,8 +193,6 @@ namespace pgm {
           return;
         }
 
-        // auto first = database.begin();
-        // auto last = database.end();
         // Copy only the first of each group of pairs with same key value
         auto &target = level(used_levels - 1);
         target.resize(info.total_kmers);
@@ -208,14 +205,6 @@ namespace pgm {
           kmer.to_long(kmer_ulong);
           *out++ = Item(kmer_ulong[0]);
         }
-
-        /*
-          *out++ = Item(*first);
-        while (++first != last) {
-          if (*first < *std::prev(out))
-            throw std::invalid_argument("Range is not sorted");
-          *out++ = Item(*first);
-        }*/
         target.resize(std::distance(target.begin(), out));
 
         if (has_pgm(used_levels - 1)) {
